@@ -1,0 +1,183 @@
+@{
+    ViewBag.Title = "Upload Document";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="bi bi-cloud-upload"></i> Upload Document for Processing
+                    </h3>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+                    {
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle"></i> @ViewBag.ErrorMessage
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(ViewBag.SuccessMessage))
+                    {
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle"></i> @ViewBag.SuccessMessage
+                            @if (!string.IsNullOrEmpty(ViewBag.DocumentId))
+                            {
+                                <div class="mt-2">
+                                    <a asp-action="Details" asp-route-id="@ViewBag.DocumentId" class="btn btn-sm btn-outline-success">
+                                        <i class="bi bi-eye"></i> View Processed Document
+                                    </a>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    <form asp-action="Upload" method="post" enctype="multipart/form-data" id="uploadForm">
+                        <div class="mb-3">
+                            <label for="file" class="form-label">
+                                <i class="bi bi-file-earmark"></i> Select Document
+                            </label>
+                            <input type="file" class="form-control" id="file" name="file" 
+                                   accept=".pdf,.jpg,.jpeg,.png,.tiff,.bmp" required>
+                            <div class="form-text">
+                                Supported formats: PDF, JPG, PNG, TIFF, BMP (Max size: 10MB)
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="documentType" class="form-label">
+                                <i class="bi bi-tags"></i> Document Type
+                            </label>
+                            <select class="form-select" id="documentType" name="documentType" required>
+                                <option value="">-- Select Document Type --</option>
+                                @foreach (var docType in ViewBag.DocumentTypes)
+                                {
+                                    <option value="@docType.Value">@docType.Text</option>
+                                }
+                            </select>
+                            <div class="form-text">
+                                Choose the type of document to optimize extraction patterns.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="supplier" class="form-label">
+                                <i class="bi bi-building"></i> Supplier/Company (Optional)
+                            </label>
+                            <input type="text" class="form-control" id="supplier" name="supplier" 
+                                   placeholder="e.g., ConEd, Verizon, ACME Corp">
+                            <div class="form-text">
+                                Specify the supplier to apply learned patterns for better accuracy.
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a asp-action="Index" class="btn btn-secondary me-md-2">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <i class="bi bi-gear"></i> Process Document
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Processing Instructions -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="bi bi-info-circle"></i> How Document Processing Works
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="bi bi-1-circle"></i> Text Extraction</h6>
+                            <p class="small text-muted">
+                                OCR technology extracts text from your document, whether it's a PDF or scanned image.
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="bi bi-2-circle"></i> Pattern Matching</h6>
+                            <p class="small text-muted">
+                                Local learned patterns are applied first for fast, accurate field extraction.
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="bi bi-3-circle"></i> AI Enhancement</h6>
+                            <p class="small text-muted">
+                                Cloud AI services provide backup extraction for complex or unknown document formats.
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="bi bi-4-circle"></i> Learning</h6>
+                            <p class="small text-muted">
+                                The system learns from each document to improve future extractions automatically.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Document Type Examples -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="bi bi-lightbulb"></i> Document Type Examples
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6>📄 Utility Bills</h6>
+                            <ul class="small text-muted">
+                                <li>Electric bills</li>
+                                <li>Gas bills</li>
+                                <li>Water bills</li>
+                                <li>Internet/Cable bills</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>📱 Telecom Bills</h6>
+                            <ul class="small text-muted">
+                                <li>Mobile phone bills</li>
+                                <li>Landline bills</li>
+                                <li>Data service bills</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>🧾 Invoices</h6>
+                            <ul class="small text-muted">
+                                <li>Service invoices</li>
+                                <li>Product invoices</li>
+                                <li>Professional services</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', function() {
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
+            submitBtn.disabled = true;
+        });
+
+        // File size validation
+        document.getElementById('file').addEventListener('change', function() {
+            const file = this.files[0];
+            if (file && file.size > 10 * 1024 * 1024) { // 10MB
+                alert('File size must be less than 10MB');
+                this.value = '';
+            }
+        });
+    </script>
+}

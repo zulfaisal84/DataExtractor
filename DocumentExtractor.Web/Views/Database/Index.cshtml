@@ -1,0 +1,314 @@
+@model DocumentExtractor.Web.Controllers.DatabaseStatsViewModel
+
+@{
+    ViewBag.Title = "Database Statistics";
+}
+
+<div class="container-fluid">
+    <!-- Database Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="display-4">🗃️ Database Overview</h1>
+                <div>
+                    <a asp-action="Patterns" class="btn btn-primary">
+                        <i class="bi bi-brain"></i> View Patterns
+                    </a>
+                    <a asp-action="Fields" class="btn btn-outline-secondary">
+                        <i class="bi bi-list-ul"></i> View Fields
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+    {
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle"></i> @ViewBag.ErrorMessage
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(ViewBag.SuccessMessage))
+    {
+        <div class="alert alert-success">
+            <i class="bi bi-check-circle"></i> @ViewBag.SuccessMessage
+        </div>
+    }
+
+    <!-- Database Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">@Model.TotalDocuments</h4>
+                            <p class="card-text">Total Documents</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-file-earmark-text fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">@Model.TotalFields</h4>
+                            <p class="card-text">Extracted Fields</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-list-ul fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">@Model.TotalPatterns</h4>
+                            <p class="card-text">Learned Patterns</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-brain fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">@((Model.AverageConfidence * 100).ToString("F1"))%</h4>
+                            <p class="card-text">Avg Confidence</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-graph-up fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Database File Information -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">💾 Database Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>📁 Location:</strong></td>
+                                    <td><code>@Model.DatabaseInfo.DatabasePath</code></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>📊 Size:</strong></td>
+                                    <td>@Model.DatabaseInfo.DatabaseSizeFormatted</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>📅 Last Modified:</strong></td>
+                                    <td>@(Model.DatabaseInfo.LastModified?.ToString("yyyy-MM-dd HH:mm:ss") ?? "Unknown")</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>✅ Exists:</strong></td>
+                                    <td>
+                                        @if (Model.DatabaseInfo.DatabaseExists)
+                                        {
+                                            <span class="badge bg-success">Yes</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">No</span>
+                                        }
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>🧠 Active Patterns:</strong></td>
+                                    <td>@Model.ActivePatterns / @Model.TotalPatterns</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>📈 Pattern Success:</strong></td>
+                                    <td>@((Model.AveragePatternSuccessRate * 100).ToString("F1"))%</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">📊 Documents by Type</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.DocumentsByType.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                @foreach (var item in Model.DocumentsByType)
+                                {
+                                    <tr>
+                                        <td>@item.Key</td>
+                                        <td style="width: 60%;">
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar" style="width: @((double)item.Value / Model.TotalDocuments * 100)%">
+                                                    @item.Value
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>@item.Value</td>
+                                    </tr>
+                                }
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">No documents found.</p>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">🏢 Documents by Supplier</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.DocumentsBySupplier.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                @foreach (var item in Model.DocumentsBySupplier)
+                                {
+                                    <tr>
+                                        <td>@item.Key</td>
+                                        <td style="width: 60%;">
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar bg-info" style="width: @((double)item.Value / Model.TotalDocuments * 100)%">
+                                                    @item.Value
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>@item.Value</td>
+                                    </tr>
+                                }
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">No suppliers identified.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Documents -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title">📋 Recent Documents</h5>
+                        <a asp-controller="Document" asp-action="Index" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-arrow-right"></i> View All
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (Model.RecentDocuments.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>📄 Document</th>
+                                        <th>📊 Type</th>
+                                        <th>🏢 Supplier</th>
+                                        <th>📈 Confidence</th>
+                                        <th>📅 Processed</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var document in Model.RecentDocuments)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <a asp-controller="Document" asp-action="Details" asp-route-id="@document.Id">
+                                                    @document.FileName
+                                                </a>
+                                            </td>
+                                            <td><span class="badge bg-secondary">@document.DocumentType</span></td>
+                                            <td>@document.Supplier</td>
+                                            <td>
+                                                @{
+                                                    var confidencePercent = document.OverallConfidence * 100;
+                                                    var badgeClass = confidencePercent >= 90 ? "bg-success" : 
+                                                                   confidencePercent >= 70 ? "bg-warning" : "bg-danger";
+                                                }
+                                                <span class="badge @badgeClass">
+                                                    @confidencePercent.ToString("F1")%
+                                                </span>
+                                            </td>
+                                            <td><small>@document.ProcessedDate.ToString("MM/dd HH:mm")</small></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center py-3">No documents found in database.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Database Actions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="card-title">⚠️ Database Management</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        These actions affect the entire database. Use with caution in production environments.
+                    </p>
+                    <form asp-action="ClearData" method="post" onsubmit="return confirm('Are you sure you want to clear ALL data? This cannot be undone!');">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> Clear All Data
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
