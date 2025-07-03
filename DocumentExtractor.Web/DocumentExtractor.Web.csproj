@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\DocumentExtractor.Core\DocumentExtractor.Core.csproj" />
     <ProjectReference Include="..\DocumentExtractor.Data\DocumentExtractor.Data.csproj" />
+    <ProjectReference Include="..\DocumentExtractor.Services\DocumentExtractor.Services.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

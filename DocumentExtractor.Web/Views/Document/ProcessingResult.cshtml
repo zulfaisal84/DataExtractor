@@ -1,0 +1,183 @@
+@model DocumentExtractor.Core.Models.ExtractedDocument
+
+@{
+    ViewBag.Title = "Document Processing Result";
+}
+
+<div class="welcome-section">
+    <h1>Document Processing Complete</h1>
+    <p class="subtitle">Your document has been processed using OCR and AI pattern learning</p>
+    
+    <!-- Processing Summary -->
+    <div class="feature-cards">
+        <div class="feature-card">
+            <div class="feature-icon text-success">
+                <i class="bi bi-check-circle"></i>
+            </div>
+            <h3>Processing Complete</h3>
+            <p>Confidence: <strong>@ViewBag.Confidence%</strong><br>
+               Time: <strong>@ViewBag.ProcessingTime ms</strong><br>
+               Fields: <strong>@ViewBag.ExtractedFields</strong></p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon text-primary">
+                <i class="bi bi-file-earmark-text"></i>
+            </div>
+            <h3>Document Details</h3>
+            <p>Type: <strong>@Model.DocumentType</strong><br>
+               Supplier: <strong>@Model.Supplier</strong><br>
+               Status: <strong>@Model.Status</strong></p>
+        </div>
+    </div>
+    
+    @if (ViewBag.SuccessMessage != null)
+    {
+        <div class="alert alert-success mt-4">
+            <i class="bi bi-check-circle me-2"></i>@ViewBag.SuccessMessage
+        </div>
+    }
+    
+    <!-- Document Information -->
+    <div class="recent-activity">
+        <h4>
+            <i class="bi bi-info-circle"></i>
+            Document Information
+        </h4>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <table class="table table-sm">
+                    <tr>
+                        <td><strong>Filename:</strong></td>
+                        <td>@Model.FileName</td>
+                    </tr>
+                    <tr>
+                        <td><strong>File Size:</strong></td>
+                        <td>@(Model.FileSizeBytes / 1024.0 / 1024.0 < 1 ? (Model.FileSizeBytes / 1024.0).ToString("F1") + " KB" : (Model.FileSizeBytes / 1024.0 / 1024.0).ToString("F1") + " MB")</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Processed:</strong></td>
+                        <td>@Model.ProcessedDate.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Document ID:</strong></td>
+                        <td><code>@Model.Id</code></td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <table class="table table-sm">
+                    <tr>
+                        <td><strong>Document Type:</strong></td>
+                        <td><span class="badge bg-secondary">@Model.DocumentType</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Supplier:</strong></td>
+                        <td>@Model.Supplier</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Overall Confidence:</strong></td>
+                        <td>
+                            @{
+                                var confidencePercent = Model.OverallConfidence * 100;
+                                var badgeClass = confidencePercent >= 90 ? "bg-success" : 
+                                               confidencePercent >= 70 ? "bg-warning" : "bg-danger";
+                            }
+                            <span class="badge @badgeClass">@confidencePercent.ToString("F1")%</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Processing Time:</strong></td>
+                        <td>@Model.ProcessingTimeMs ms</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Extracted Fields -->
+    @if (Model.Fields.Any())
+    {
+        <div class="recent-activity mt-4">
+            <h4>
+                <i class="bi bi-list-ul"></i>
+                Extracted Fields (@Model.Fields.Count)
+            </h4>
+            
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Field Name</th>
+                            <th>Value</th>
+                            <th>Type</th>
+                            <th>Confidence</th>
+                            <th>Source</th>
+                            <th>Verified</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var field in Model.Fields.OrderByDescending(f => f.Confidence))
+                        {
+                            <tr>
+                                <td><strong>@field.FieldName</strong></td>
+                                <td>@field.Value</td>
+                                <td>
+                                    <span class="badge bg-info">@field.Type</span>
+                                </td>
+                                <td>
+                                    @{
+                                        var fieldConfidencePercent = field.Confidence * 100;
+                                        var fieldBadgeClass = fieldConfidencePercent >= 90 ? "bg-success" : 
+                                                            fieldConfidencePercent >= 70 ? "bg-warning" : "bg-danger";
+                                    }
+                                    <span class="badge @fieldBadgeClass">@fieldConfidencePercent.ToString("F1")%</span>
+                                </td>
+                                <td><small class="text-muted">@field.Source</small></td>
+                                <td>
+                                    @if (field.IsVerified)
+                                    {
+                                        <i class="bi bi-check-circle text-success"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-question-circle text-warning"></i>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    
+    <!-- Raw OCR Text -->
+    @if (!string.IsNullOrWhiteSpace(Model.RawText))
+    {
+        <div class="recent-activity mt-4">
+            <h4>
+                <i class="bi bi-file-text"></i>
+                Raw OCR Text
+            </h4>
+            <div class="card">
+                <div class="card-body">
+                    <pre class="mb-0" style="white-space: pre-wrap; max-height: 300px; overflow-y: auto; font-size: 0.9rem;">@Model.RawText</pre>
+                </div>
+            </div>
+        </div>
+    }
+    
+    <!-- Action Buttons -->
+    <div class="text-center mt-4">
+        <a href="@Url.Action("Details", new { id = Model.Id })" class="btn btn-primary me-2">
+            <i class="bi bi-eye"></i> View Full Details
+        </a>
+        <a href="@Url.Action("Index")" class="btn btn-secondary me-2">
+            <i class="bi bi-list"></i> Back to Documents
+        </a>
+        <a href="@Url.Action("Upload")" class="btn btn-success">
+            <i class="bi bi-cloud-upload"></i> Process Another Document
+        </a>
+    </div>
+</div>

@@ -1,246 +1,42 @@
 @model IEnumerable<DocumentExtractor.Core.Models.ExtractedDocument>
 
 @{
-    ViewBag.Title = "Document Intelligence Dashboard";
+    ViewBag.Title = "Document Intelligence Desktop Application";
 }
 
-<div class="container-fluid">
-    <!-- Dashboard Header -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <h1 class="display-4">📄 Document Intelligence Dashboard</h1>
-                <div>
-                    <a asp-action="Upload" class="btn btn-primary btn-lg">
-                        <i class="bi bi-cloud-upload"></i> Upload Document
-                    </a>
-                    <a asp-controller="Database" asp-action="Index" class="btn btn-outline-secondary">
-                        <i class="bi bi-database"></i> Database View
-                    </a>
-                </div>
+<!-- Welcome Section -->
+<div class="welcome-section">
+    <h1>Welcome to Document Intelligence</h1>
+    <p class="subtitle">Your AI-powered document processing solution</p>
+    
+    <!-- Feature Cards -->
+    <div class="feature-cards">
+        <div class="feature-card">
+            <div class="feature-icon text-primary">
+                <i class="bi bi-cloud-upload"></i>
             </div>
+            <h3>Upload Documents</h3>
+            <p>Start by uploading your documents for intelligent processing</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon text-danger">
+                <i class="bi bi-brain"></i>
+            </div>
+            <h3>AI Learning</h3>
+            <p>Our AI learns from your documents to improve accuracy over time</p>
         </div>
     </div>
-
-    <!-- Statistics Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card bg-primary text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h4 class="card-title">@ViewBag.TotalDocuments</h4>
-                            <p class="card-text">Total Documents</p>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="bi bi-file-earmark-text fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h4 class="card-title">@((ViewBag.AverageConfidence * 100).ToString("F1"))%</h4>
-                            <p class="card-text">Avg Confidence</p>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="bi bi-graph-up fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h4 class="card-title">@(((Dictionary<string, int>)ViewBag.DocumentsByType).Count)</h4>
-                            <p class="card-text">Document Types</p>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="bi bi-tags fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h4 class="card-title">@(((Dictionary<string, int>)ViewBag.DocumentsBySupplier).Count)</h4>
-                            <p class="card-text">Suppliers</p>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="bi bi-building fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Documents by Type Chart -->
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title">📊 Documents by Type</h5>
-                </div>
-                <div class="card-body">
-                    @if (((Dictionary<string, int>)ViewBag.DocumentsByType).Any())
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                @foreach (var item in (Dictionary<string, int>)ViewBag.DocumentsByType)
-                                {
-                                    <tr>
-                                        <td>@item.Key</td>
-                                        <td>
-                                            <div class="progress" style="height: 20px;">
-                                                <div class="progress-bar" style="width: @((double)item.Value / ViewBag.TotalDocuments * 100)%">
-                                                    @item.Value
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                }
-                            </table>
-                        </div>
-                    }
-                    else
-                    {
-                        <p class="text-muted">No documents processed yet.</p>
-                    }
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title">🏢 Documents by Supplier</h5>
-                </div>
-                <div class="card-body">
-                    @if (((Dictionary<string, int>)ViewBag.DocumentsBySupplier).Any())
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                @foreach (var item in (Dictionary<string, int>)ViewBag.DocumentsBySupplier)
-                                {
-                                    <tr>
-                                        <td>@item.Key</td>
-                                        <td>
-                                            <div class="progress" style="height: 20px;">
-                                                <div class="progress-bar bg-info" style="width: @((double)item.Value / ViewBag.TotalDocuments * 100)%">
-                                                    @item.Value
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                }
-                            </table>
-                        </div>
-                    }
-                    else
-                    {
-                        <p class="text-muted">No suppliers identified yet.</p>
-                    }
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Document List -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title">📋 Recent Documents</h5>
-                </div>
-                <div class="card-body">
-                    @if (Model.Any())
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>📄 Document</th>
-                                        <th>📊 Type</th>
-                                        <th>🏢 Supplier</th>
-                                        <th>📈 Confidence</th>
-                                        <th>🔢 Fields</th>
-                                        <th>📅 Processed</th>
-                                        <th>⚙️ Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var document in Model)
-                                    {
-                                        <tr>
-                                            <td>
-                                                <strong>@document.FileName</strong><br>
-                                                <small class="text-muted">@document.FileSizeBytes bytes</small>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-secondary">@document.DocumentType</span>
-                                            </td>
-                                            <td>@document.Supplier</td>
-                                            <td>
-                                                @{
-                                                    var confidencePercent = document.OverallConfidence * 100;
-                                                    var badgeClass = confidencePercent >= 90 ? "bg-success" : 
-                                                                   confidencePercent >= 70 ? "bg-warning" : "bg-danger";
-                                                }
-                                                <span class="badge @badgeClass">
-                                                    @confidencePercent.ToString("F1")%
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-info">@document.Fields.Count</span>
-                                            </td>
-                                            <td>
-                                                <small>@document.ProcessedDate.ToString("yyyy-MM-dd HH:mm")</small>
-                                            </td>
-                                            <td>
-                                                <div class="btn-group btn-group-sm">
-                                                    <a asp-action="Details" asp-route-id="@document.Id" 
-                                                       class="btn btn-outline-primary btn-sm">
-                                                        <i class="bi bi-eye"></i> View
-                                                    </a>
-                                                    <button type="button" class="btn btn-outline-danger btn-sm" 
-                                                            onclick="deleteDocument('@document.Id', '@document.FileName')">
-                                                        <i class="bi bi-trash"></i> Delete
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="text-center py-5">
-                            <i class="bi bi-inbox display-1 text-muted"></i>
-                            <h3 class="mt-3">No Documents Yet</h3>
-                            <p class="text-muted">Upload your first document to get started with data extraction.</p>
-                            <a asp-action="Upload" class="btn btn-primary">
-                                <i class="bi bi-cloud-upload"></i> Upload Document
-                            </a>
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
+    
+    <!-- Recent Activity -->
+    <div class="recent-activity">
+        <h4>
+            <i class="bi bi-clock-history"></i>
+            Recent Activity
+        </h4>
+        <p class="text-muted">Application started successfully</p>
     </div>
 </div>
+
 
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1">

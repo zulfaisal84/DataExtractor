@@ -1,0 +1,61 @@
+@model IEnumerable<DocumentExtractor.Core.Models.LearnedPattern>
+
+@{
+    ViewBag.Title = "Learned Patterns";
+}
+
+<div class="welcome-section">
+    <h1>Pattern Management</h1>
+    <p class="subtitle">Manage your AI-powered extraction patterns</p>
+    
+    <div class="recent-activity">
+        <h4>
+            <i class="bi bi-brain"></i>
+            Learned Patterns
+        </h4>
+        
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Field Name</th>
+                            <th>Supplier</th>
+                            <th>Success Rate</th>
+                            <th>Usage Count</th>
+                            <th>Active</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var pattern in Model)
+                        {
+                            <tr>
+                                <td>@pattern.FieldName</td>
+                                <td>@pattern.Supplier</td>
+                                <td>
+                                    <span class="badge bg-success">@((pattern.SuccessRate * 100).ToString("F1"))%</span>
+                                </td>
+                                <td>@pattern.UsageCount</td>
+                                <td>
+                                    @if (pattern.IsActive)
+                                    {
+                                        <span class="badge bg-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <p class="text-muted">No patterns learned yet. Process some documents to start building patterns.</p>
+        }
+    </div>
+</div>

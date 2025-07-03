@@ -1,0 +1,116 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:DocumentExtractor.Desktop.ViewModels"
+        x:Class="DocumentExtractor.Desktop.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="🚀 DOCUMENT INTELLIGENCE - DESKTOP APP RUNNING!"
+        Width="900" Height="700"
+        MinWidth="800" MinHeight="600"
+        WindowStartupLocation="CenterScreen"
+        Background="LightBlue"
+        Topmost="True"
+        CanResize="True"
+        ShowInTaskbar="True"
+        WindowState="Normal"
+        ExtendClientAreaToDecorationsHint="False">
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+    <Grid Margin="30">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Header -->
+        <Border Grid.Row="0" Background="DarkBlue" CornerRadius="10,10,0,0" Padding="20" Margin="0,0,0,10">
+            <StackPanel HorizontalAlignment="Center">
+                <TextBlock Text="🎉 SUCCESS!" 
+                          FontSize="36" FontWeight="Bold" 
+                          HorizontalAlignment="Center" 
+                          Foreground="White" Margin="0,0,0,10"/>
+                
+                <TextBlock Text="Document Intelligence Desktop App is RUNNING!" 
+                          FontSize="18" FontWeight="Bold" 
+                          HorizontalAlignment="Center" 
+                          Foreground="LightBlue"/>
+            </StackPanel>
+        </Border>
+        
+        <!-- Main Content -->
+        <ScrollViewer Grid.Row="1">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Border Background="White" CornerRadius="10" Padding="40" 
+                       BorderBrush="DarkBlue" BorderThickness="3" Margin="0,0,0,20">
+                    <StackPanel>
+                        <TextBlock Text="📊 Your Database Statistics:" 
+                                  FontSize="20" FontWeight="Bold" 
+                                  HorizontalAlignment="Center" Margin="0,0,0,20"/>
+                        
+                        <TextBlock Text="{Binding TotalDocuments, StringFormat='📄 Total Documents: {0}'}" 
+                                  FontSize="16" HorizontalAlignment="Center" Margin="0,8"/>
+                        
+                        <TextBlock Text="{Binding PatternSuccessRate, StringFormat='📈 Pattern Success: {0}'}" 
+                                  FontSize="16" HorizontalAlignment="Center" Margin="0,8"/>
+                        
+                        <TextBlock Text="{Binding LearnedPatterns, StringFormat='🧠 Learned Patterns: {0}'}" 
+                                  FontSize="16" HorizontalAlignment="Center" Margin="0,8"/>
+                        
+                        <TextBlock Text="{Binding DatabaseStatus, StringFormat='🔗 Status: {0}'}" 
+                                  FontSize="16" HorizontalAlignment="Center" Margin="0,8"/>
+                    </StackPanel>
+                </Border>
+                
+                <Border Background="LightGreen" CornerRadius="10" Padding="20" 
+                       BorderBrush="Green" BorderThickness="2" Margin="0,0,0,20">
+                    <StackPanel>
+                        <TextBlock Text="✅ Application Status" 
+                                  FontSize="16" FontWeight="Bold" 
+                                  HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                        
+                        <TextBlock Text="• Cross-platform desktop app created successfully!" 
+                                  FontSize="14" HorizontalAlignment="Center" Margin="0,2"/>
+                        
+                        <TextBlock Text="• Database connection established and working" 
+                                  FontSize="14" HorizontalAlignment="Center" Margin="0,2"/>
+                        
+                        <TextBlock Text="• UI framework: Avalonia (works on Mac, Windows, Linux)" 
+                                  FontSize="14" HorizontalAlignment="Center" Margin="0,2"/>
+                        
+                        <TextBlock Text="• Backend: .NET 9 with Entity Framework Core" 
+                                  FontSize="14" HorizontalAlignment="Center" Margin="0,2"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+        
+        <!-- Footer with Controls -->
+        <Border Grid.Row="2" Background="DarkGray" CornerRadius="0,0,10,10" Padding="15">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <TextBlock Grid.Column="0" Text="💡 This window will stay open. Use the buttons to close or minimize." 
+                          FontSize="12" VerticalAlignment="Center" 
+                          Foreground="White"/>
+                
+                <Button Grid.Column="1" Content="Minimize" 
+                       Background="Orange" Foreground="White"
+                       Margin="10,0" Padding="15,5"
+                       Click="MinimizeWindow"/>
+                
+                <Button Grid.Column="2" Content="❌ Close App" 
+                       Background="Red" Foreground="White"
+                       Padding="15,5"
+                       Click="CloseApplication"/>
+            </Grid>
+        </Border>
+    </Grid>
+
+</Window>

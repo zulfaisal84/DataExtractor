@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentExtractor.Console",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentExtractor.Web", "DocumentExtractor.Web\DocumentExtractor.Web.csproj", "{D5D8881F-9606-49BA-8C4D-81A034802F41}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentExtractor.Desktop", "DocumentExtractor.Desktop\DocumentExtractor.Desktop.csproj", "{4D1BE7C1-4C1F-400B-9EF6-A50392855D4A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,5 +44,9 @@ Global
 		{D5D8881F-9606-49BA-8C4D-81A034802F41}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D5D8881F-9606-49BA-8C4D-81A034802F41}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D5D8881F-9606-49BA-8C4D-81A034802F41}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D1BE7C1-4C1F-400B-9EF6-A50392855D4A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D1BE7C1-4C1F-400B-9EF6-A50392855D4A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D1BE7C1-4C1F-400B-9EF6-A50392855D4A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D1BE7C1-4C1F-400B-9EF6-A50392855D4A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -1,5 +1,6 @@
 using DocumentExtractor.Core.Models;
 using DocumentExtractor.Data.Context;
+using DocumentExtractor.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,12 +20,12 @@ namespace DocumentExtractor.Web.Controllers
     {
         private readonly DocumentExtractionContext _context;
         private readonly ILogger<DocumentController> _logger;
-
         /// <summary>
         /// Constructor with dependency injection.
-        /// C# Note: Dependency injection is configured in Program.cs (newer .NET) or Startup.cs (older versions)
         /// </summary>
-        public DocumentController(DocumentExtractionContext context, ILogger<DocumentController> logger)
+        public DocumentController(
+            DocumentExtractionContext context, 
+            ILogger<DocumentController> logger)
         {
             _context = context;
             _logger = logger;
@@ -120,7 +121,6 @@ namespace DocumentExtractor.Web.Controllers
 
         /// <summary>
         /// Handle document upload and processing.
-        /// This simulates the document processing workflow.
         /// </summary>
         /// <param name="file">Uploaded file</param>
         /// <param name="documentType">Document type selection</param>
@@ -159,6 +159,9 @@ namespace DocumentExtractor.Web.Controllers
 
                 ViewBag.SuccessMessage = $"Document processed successfully! ID: {document.Id}";
                 ViewBag.DocumentId = document.Id;
+                ViewBag.ProcessingTime = document.ProcessingTimeMs;
+                ViewBag.Confidence = (document.OverallConfidence * 100).ToString("F1");
+                ViewBag.ExtractedFields = document.Fields.Count;
                 
                 return View("ProcessingResult", document);
             }

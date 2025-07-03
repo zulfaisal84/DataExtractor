@@ -41,9 +41,10 @@ namespace DocumentExtractor.Console
                 await RunDemonstrationAsync();
                 
                 // Display completion message
-                System.Console.WriteLine("\n✅ Demonstration completed successfully!");
-                System.Console.WriteLine("Press any key to exit...");
-                System.Console.ReadKey();
+                System.Console.WriteLine("\n✅ Database initialization completed successfully!");
+                
+                // Start interactive menu
+                await RunInteractiveMenuAsync();
             }
             catch (Exception ex)
             {
@@ -510,6 +511,422 @@ namespace DocumentExtractor.Console
             {
                 System.Console.WriteLine($"   ❌ Error retrieving statistics: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Run interactive menu system for exploring the Document Intelligence application.
+        /// Provides a user-friendly interface for accessing all features.
+        /// </summary>
+        private static async Task RunInteractiveMenuAsync()
+        {
+            bool running = true;
+            
+            while (running)
+            {
+                DisplayMainMenu();
+                var choice = System.Console.ReadKey(true).KeyChar;
+                System.Console.WriteLine();
+                
+                try
+                {
+                    switch (choice)
+                    {
+                        case '1':
+                            await ViewDocumentLibraryAsync();
+                            break;
+                        case '2':
+                            await ViewPatternLibraryAsync();
+                            break;
+                        case '3':
+                            await SimulateDocumentProcessingAsync();
+                            break;
+                        case '4':
+                            await ViewDatabaseStatisticsAsync();
+                            break;
+                        case '5':
+                            await ExportDataAsync();
+                            break;
+                        case '6':
+                            await ManageDatabaseAsync();
+                            break;
+                        case '0':
+                        case 'q':
+                        case 'Q':
+                            running = false;
+                            System.Console.WriteLine("👋 Thank you for using Document Intelligence!");
+                            break;
+                        default:
+                            System.Console.WriteLine("❌ Invalid option. Please try again.");
+                            await Task.Delay(1500);
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Console.WriteLine($"❌ Error: {ex.Message}");
+                    System.Console.WriteLine("Press any key to continue...");
+                    System.Console.ReadKey();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Display the main menu options.
+        /// </summary>
+        private static void DisplayMainMenu()
+        {
+            System.Console.Clear();
+            System.Console.ForegroundColor = ConsoleColor.Cyan;
+            System.Console.WriteLine("╔════════════════════════════════════════════════════════╗");
+            System.Console.WriteLine("║              📄 DOCUMENT INTELLIGENCE                  ║");
+            System.Console.WriteLine("║                Interactive Console                     ║");
+            System.Console.WriteLine("╠════════════════════════════════════════════════════════╣");
+            System.Console.ResetColor();
+            System.Console.ForegroundColor = ConsoleColor.Green;
+            System.Console.WriteLine("║  1️⃣  📋 View Document Library                          ║");
+            System.Console.WriteLine("║  2️⃣  🧠 View Pattern Library                           ║");
+            System.Console.WriteLine("║  3️⃣  ⚙️  Simulate Document Processing                  ║");
+            System.Console.WriteLine("║  4️⃣  📊 View Database Statistics                       ║");
+            System.Console.WriteLine("║  5️⃣  📤 Export Data                                    ║");
+            System.Console.WriteLine("║  6️⃣  🔧 Manage Database                                ║");
+            System.Console.ResetColor();
+            System.Console.ForegroundColor = ConsoleColor.Yellow;
+            System.Console.WriteLine("║  0️⃣  🚪 Exit Application                               ║");
+            System.Console.ResetColor();
+            System.Console.ForegroundColor = ConsoleColor.Cyan;
+            System.Console.WriteLine("╚════════════════════════════════════════════════════════╝");
+            System.Console.ResetColor();
+            System.Console.WriteLine();
+            System.Console.Write("Choose an option (0-6): ");
+        }
+
+        /// <summary>
+        /// View all documents in the database with detailed information.
+        /// </summary>
+        private static async Task ViewDocumentLibraryAsync()
+        {
+            System.Console.Clear();
+            System.Console.WriteLine("📋 DOCUMENT LIBRARY");
+            System.Console.WriteLine("═══════════════════");
+            
+            using var context = new DocumentExtractionContext();
+            var documents = await context.Documents
+                .Include(d => d.Fields)
+                .OrderByDescending(d => d.ProcessedDate)
+                .ToListAsync();
+            
+            if (!documents.Any())
+            {
+                System.Console.WriteLine("📭 No documents found in the database.");
+            }
+            else
+            {
+                System.Console.WriteLine($"Found {documents.Count} documents:\n");
+                
+                for (int i = 0; i < documents.Count; i++)
+                {
+                    var doc = documents[i];
+                    System.Console.WriteLine($"📄 {i + 1}. {doc.FileName}");
+                    System.Console.WriteLine($"   🏢 Supplier: {doc.Supplier}");
+                    System.Console.WriteLine($"   📊 Type: {doc.DocumentType}");
+                    System.Console.WriteLine($"   📈 Confidence: {doc.OverallConfidence:P1}");
+                    System.Console.WriteLine($"   🔢 Fields: {doc.Fields.Count}");
+                    System.Console.WriteLine($"   📅 Processed: {doc.ProcessedDate:yyyy-MM-dd HH:mm}");
+                    System.Console.WriteLine($"   🆔 ID: {doc.Id}");
+                    System.Console.WriteLine();
+                }
+            }
+            
+            System.Console.WriteLine("Press any key to return to main menu...");
+            System.Console.ReadKey();
+        }
+
+        /// <summary>
+        /// View all learned patterns with performance metrics.
+        /// </summary>
+        private static async Task ViewPatternLibraryAsync()
+        {
+            System.Console.Clear();
+            System.Console.WriteLine("🧠 PATTERN LIBRARY");
+            System.Console.WriteLine("══════════════════");
+            
+            using var context = new DocumentExtractionContext();
+            var patterns = await context.Patterns
+                .OrderByDescending(p => p.SuccessRate)
+                .ThenByDescending(p => p.UsageCount)
+                .ToListAsync();
+            
+            if (!patterns.Any())
+            {
+                System.Console.WriteLine("🧠 No patterns found in the database.");
+            }
+            else
+            {
+                System.Console.WriteLine($"Found {patterns.Count} learned patterns:\n");
+                
+                for (int i = 0; i < patterns.Count; i++)
+                {
+                    var pattern = patterns[i];
+                    System.Console.WriteLine($"🔍 {i + 1}. {pattern.Supplier}.{pattern.FieldName}");
+                    System.Console.WriteLine($"   📈 Success Rate: {pattern.SuccessRate:P1} ({pattern.SuccessCount}/{pattern.UsageCount})");
+                    System.Console.WriteLine($"   🎯 Priority: {pattern.Priority}");
+                    System.Console.WriteLine($"   ✅ Active: {(pattern.IsActive ? "Yes" : "No")}");
+                    System.Console.WriteLine($"   📝 Pattern: {pattern.RegexPattern}");
+                    if (!string.IsNullOrEmpty(pattern.Description))
+                    {
+                        System.Console.WriteLine($"   💬 Description: {pattern.Description}");
+                    }
+                    System.Console.WriteLine();
+                }
+            }
+            
+            System.Console.WriteLine("Press any key to return to main menu...");
+            System.Console.ReadKey();
+        }
+
+        /// <summary>
+        /// Simulate processing new documents.
+        /// </summary>
+        private static async Task SimulateDocumentProcessingAsync()
+        {
+            System.Console.Clear();
+            System.Console.WriteLine("⚙️ SIMULATE DOCUMENT PROCESSING");
+            System.Console.WriteLine("══════════════════════════════");
+            
+            System.Console.WriteLine("Select document type to process:");
+            System.Console.WriteLine("1. Utility Bill");
+            System.Console.WriteLine("2. Telecom Bill");
+            System.Console.WriteLine("3. Invoice");
+            System.Console.WriteLine("4. Contract");
+            System.Console.Write("\nChoice (1-4): ");
+            
+            var choice = System.Console.ReadKey().KeyChar;
+            System.Console.WriteLine("\n");
+            
+            var documentType = choice switch
+            {
+                '1' => DocumentType.UtilityBill,
+                '2' => DocumentType.TelecomBill,
+                '3' => DocumentType.Invoice,
+                '4' => DocumentType.Contract,
+                _ => DocumentType.Invoice
+            };
+            
+            System.Console.Write("Enter supplier name (or press Enter for random): ");
+            var supplier = System.Console.ReadLine();
+            if (string.IsNullOrWhiteSpace(supplier))
+            {
+                supplier = new[] { "ConEd", "Verizon", "ACME Corp", "Global Inc", "TechCorp" }[Random.Shared.Next(5)];
+            }
+            
+            System.Console.WriteLine($"\n🔄 Processing {documentType} from {supplier}...\n");
+            
+            // Simulate processing steps with progress
+            await SimulateProcessingStepAsync("📄 OCR Text Extraction", 2000);
+            await SimulateProcessingStepAsync("🔍 Document Classification", 800);
+            await SimulateProcessingStepAsync("🏢 Supplier Detection", 600);
+            await SimulateProcessingStepAsync("🧠 Pattern Matching", 1200);
+            await SimulateProcessingStepAsync("✅ Field Validation", 500);
+            await SimulateProcessingStepAsync("💾 Database Storage", 300);
+            
+            // Create and save the document
+            var document = new ExtractedDocument($"/simulation/{documentType}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf")
+            {
+                DocumentType = documentType,
+                Supplier = supplier,
+                Status = ProcessingStatus.Completed,
+                ProcessingTimeMs = 5400,
+                OverallConfidence = 0.80 + (Random.Shared.NextDouble() * 0.20)
+            };
+            
+            AddSampleFields(document);
+            
+            using var context = new DocumentExtractionContext();
+            context.Documents.Add(document);
+            await context.SaveChangesAsync();
+            
+            System.Console.WriteLine($"\n✅ Processing completed successfully!");
+            System.Console.WriteLine($"📄 Document ID: {document.Id}");
+            System.Console.WriteLine($"📈 Overall Confidence: {document.OverallConfidence:P1}");
+            System.Console.WriteLine($"🔢 Fields Extracted: {document.Fields.Count}");
+            System.Console.WriteLine($"⏱️ Processing Time: {document.ProcessingTimeMs}ms");
+            
+            System.Console.WriteLine("\nPress any key to return to main menu...");
+            System.Console.ReadKey();
+        }
+
+        /// <summary>
+        /// Display detailed database statistics.
+        /// </summary>
+        private static async Task ViewDatabaseStatisticsAsync()
+        {
+            System.Console.Clear();
+            System.Console.WriteLine("📊 DATABASE STATISTICS");
+            System.Console.WriteLine("═════════════════════");
+            
+            await DisplaySystemStatisticsAsync();
+            
+            System.Console.WriteLine("\nPress any key to return to main menu...");
+            System.Console.ReadKey();
+        }
+
+        /// <summary>
+        /// Export data in various formats.
+        /// </summary>
+        private static async Task ExportDataAsync()
+        {
+            System.Console.Clear();
+            System.Console.WriteLine("📤 EXPORT DATA");
+            System.Console.WriteLine("══════════════");
+            
+            System.Console.WriteLine("Export options:");
+            System.Console.WriteLine("1. Export document summary (CSV-like format)");
+            System.Console.WriteLine("2. Export pattern summary");
+            System.Console.WriteLine("3. Export database statistics");
+            System.Console.Write("\nChoice (1-3): ");
+            
+            var choice = System.Console.ReadKey().KeyChar;
+            System.Console.WriteLine("\n");
+            
+            using var context = new DocumentExtractionContext();
+            
+            switch (choice)
+            {
+                case '1':
+                    await ExportDocumentSummaryAsync(context);
+                    break;
+                case '2':
+                    await ExportPatternSummaryAsync(context);
+                    break;
+                case '3':
+                    await ExportStatisticsSummaryAsync(context);
+                    break;
+                default:
+                    System.Console.WriteLine("❌ Invalid choice.");
+                    break;
+            }
+            
+            System.Console.WriteLine("\nPress any key to return to main menu...");
+            System.Console.ReadKey();
+        }
+
+        /// <summary>
+        /// Export document summary in CSV-like format.
+        /// </summary>
+        private static async Task ExportDocumentSummaryAsync(DocumentExtractionContext context)
+        {
+            System.Console.WriteLine("\n📄 DOCUMENT EXPORT");
+            System.Console.WriteLine("FileName,DocumentType,Supplier,Confidence,FieldCount,ProcessedDate");
+            System.Console.WriteLine("─".PadRight(80, '─'));
+            
+            var documents = await context.Documents.ToListAsync();
+            foreach (var doc in documents)
+            {
+                System.Console.WriteLine($"{doc.FileName},{doc.DocumentType},{doc.Supplier},{doc.OverallConfidence:F2},{doc.Fields.Count},{doc.ProcessedDate:yyyy-MM-dd}");
+            }
+            
+            System.Console.WriteLine($"\n✅ Exported {documents.Count} documents");
+        }
+
+        /// <summary>
+        /// Export pattern summary.
+        /// </summary>
+        private static async Task ExportPatternSummaryAsync(DocumentExtractionContext context)
+        {
+            System.Console.WriteLine("\n🧠 PATTERN EXPORT");
+            System.Console.WriteLine("Supplier,FieldName,SuccessRate,UsageCount,Priority,Active");
+            System.Console.WriteLine("─".PadRight(80, '─'));
+            
+            var patterns = await context.Patterns.ToListAsync();
+            foreach (var pattern in patterns)
+            {
+                System.Console.WriteLine($"{pattern.Supplier},{pattern.FieldName},{pattern.SuccessRate:F2},{pattern.UsageCount},{pattern.Priority},{pattern.IsActive}");
+            }
+            
+            System.Console.WriteLine($"\n✅ Exported {patterns.Count} patterns");
+        }
+
+        /// <summary>
+        /// Export statistics summary.
+        /// </summary>
+        private static async Task ExportStatisticsSummaryAsync(DocumentExtractionContext context)
+        {
+            System.Console.WriteLine("\n📊 STATISTICS EXPORT");
+            
+            var totalDocs = await context.Documents.CountAsync();
+            var totalPatterns = await context.Patterns.CountAsync();
+            var avgConfidence = await context.Documents.AverageAsync(d => d.OverallConfidence);
+            var avgPatternSuccess = await context.Patterns.Where(p => p.UsageCount > 0).AverageAsync(p => p.SuccessRate);
+            
+            System.Console.WriteLine($"Total Documents: {totalDocs}");
+            System.Console.WriteLine($"Total Patterns: {totalPatterns}");
+            System.Console.WriteLine($"Average Document Confidence: {avgConfidence:P1}");
+            System.Console.WriteLine($"Average Pattern Success Rate: {avgPatternSuccess:P1}");
+            
+            System.Console.WriteLine("\n✅ Statistics exported");
+        }
+
+        /// <summary>
+        /// Database management operations.
+        /// </summary>
+        private static async Task ManageDatabaseAsync()
+        {
+            System.Console.Clear();
+            System.Console.WriteLine("🔧 DATABASE MANAGEMENT");
+            System.Console.WriteLine("═════════════════════");
+            
+            System.Console.WriteLine("Management options:");
+            System.Console.WriteLine("1. View database info");
+            System.Console.WriteLine("2. Clear all data (⚠️ DESTRUCTIVE)");
+            System.Console.WriteLine("3. Backup database info");
+            System.Console.Write("\nChoice (1-3): ");
+            
+            var choice = System.Console.ReadKey().KeyChar;
+            System.Console.WriteLine("\n");
+            
+            using var context = new DocumentExtractionContext();
+            
+            switch (choice)
+            {
+                case '1':
+                    var dbInfo = context.GetDatabaseInfo();
+                    System.Console.WriteLine($"\n📁 Database Location: {dbInfo.DatabasePath}");
+                    System.Console.WriteLine($"📊 Database Size: {dbInfo.DatabaseSizeFormatted}");
+                    System.Console.WriteLine($"📅 Last Modified: {dbInfo.LastModified}");
+                    System.Console.WriteLine($"✅ Database Exists: {dbInfo.DatabaseExists}");
+                    break;
+                    
+                case '2':
+                    System.Console.Write("\n⚠️ Are you sure you want to clear ALL data? Type 'DELETE' to confirm: ");
+                    var confirm = System.Console.ReadLine();
+                    if (confirm == "DELETE")
+                    {
+                        context.Documents.RemoveRange(context.Documents);
+                        context.Patterns.RemoveRange(context.Patterns);
+                        await context.SaveChangesAsync();
+                        System.Console.WriteLine("✅ All data cleared successfully");
+                    }
+                    else
+                    {
+                        System.Console.WriteLine("❌ Operation cancelled");
+                    }
+                    break;
+                    
+                case '3':
+                    var info = context.GetDatabaseInfo();
+                    System.Console.WriteLine($"\n💾 Database backup info:");
+                    System.Console.WriteLine($"Source: {info.DatabasePath}");
+                    System.Console.WriteLine($"Size: {info.DatabaseSizeFormatted}");
+                    System.Console.WriteLine("ℹ️ To backup manually, copy the database file to a safe location");
+                    break;
+                    
+                default:
+                    System.Console.WriteLine("❌ Invalid choice.");
+                    break;
+            }
+            
+            System.Console.WriteLine("\nPress any key to return to main menu...");
+            System.Console.ReadKey();
         }
     }
 }

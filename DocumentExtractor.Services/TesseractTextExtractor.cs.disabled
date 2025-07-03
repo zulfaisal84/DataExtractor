@@ -1,0 +1,194 @@
+using DocumentExtractor.Core.Interfaces;
+using Microsoft.Extensions.Logging;
+using System.Drawing;
+using Tesseract;
+
+namespace DocumentExtractor.Services
+{
+    /// <summary>
+    /// Tesseract OCR-based text extraction service
+    /// Extracts text from document images using the Tesseract OCR engine
+    /// </summary>
+    public class TesseractTextExtractor : ITextExtractor
+    {
+        private readonly ILogger<TesseractTextExtractor> _logger;
+        private const string TesseractDataPath = "./tessdata"; // Default Tesseract data path
+
+        /// <summary>
+        /// Initialize the Tesseract text extractor with logging
+        /// </summary>
+        /// <param name="logger">Logger instance for diagnostics</param>
+        public TesseractTextExtractor(ILogger<TesseractTextExtractor> logger)
+        {
+            _logger = logger;
+        }
+
+        /// <summary>
+        /// Extract text from a document image file
+        /// </summary>
+        /// <param name="filePath">Path to the image file (PNG, JPG, TIFF, etc.)</param>
+        /// <returns>Extracted text from the document</returns>
+        public async Task<string> ExtractTextAsync(string filePath)
+        {
+            try
+            {
+                _logger.LogInformation("Starting OCR text extraction for file: {FilePath}", filePath);
+
+                // Validate file exists
+                if (!File.Exists(filePath))
+                {
+                    _logger.LogError("File not found: {FilePath}", filePath);
+                    throw new FileNotFoundException($"Document file not found: {filePath}");
+                }
+
+                // Get file info for logging
+                var fileInfo = new FileInfo(filePath);
+                _logger.LogDebug("Processing file: {FileName}, Size: {FileSize} bytes", 
+                    fileInfo.Name, fileInfo.Length);
+
+                // Extract text using Tesseract OCR
+                string extractedText = await ExtractTextWithTesseractAsync(filePath);
+
+                _logger.LogInformation("OCR extraction completed. Text length: {TextLength} characters", 
+                    extractedText.Length);
+
+                return extractedText;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error extracting text from file: {FilePath}", filePath);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Extract text from image stream
+        /// </summary>
+        /// <param name="imageStream">Stream containing the image data</param>
+        /// <param name="fileName">Original filename for logging purposes</param>
+        /// <returns>Extracted text from the document</returns>
+        public async Task<string> ExtractTextFromStreamAsync(Stream imageStream, string fileName)
+        {
+            try
+            {
+                _logger.LogInformation("Starting OCR text extraction from stream for file: {FileName}", fileName);
+
+                // Create temporary file from stream
+                string tempFilePath = Path.Combine(Path.GetTempPath(), 
+                    $"ocr_temp_{Guid.NewGuid()}{Path.GetExtension(fileName)}");
+
+                try
+                {
+                    // Save stream to temporary file
+                    using (var fileStream = File.Create(tempFilePath))
+                    {
+                        await imageStream.CopyToAsync(fileStream);
+                    }
+
+                    // Process the temporary file
+                    string extractedText = await ExtractTextAsync(tempFilePath);
+
+                    return extractedText;
+                }
+                finally
+                {
+                    // Clean up temporary file
+                    if (File.Exists(tempFilePath))
+                    {
+                        File.Delete(tempFilePath);
+                        _logger.LogDebug("Cleaned up temporary file: {TempFilePath}", tempFilePath);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error extracting text from stream for file: {FileName}", fileName);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Core Tesseract OCR text extraction logic
+        /// </summary>
+        /// <param name="imagePath">Path to the image file</param>
+        /// <returns>Extracted text</returns>
+        private async Task<string> ExtractTextWithTesseractAsync(string imagePath)
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    // Check if Tesseract data directory exists
+                    if (!Directory.Exists(TesseractDataPath))
+                    {
+                        _logger.LogWarning("Tesseract data directory not found at {TesseractDataPath}. " +
+                            "OCR may use system default or fail.", TesseractDataPath);
+                    }
+
+                    // Initialize Tesseract engine
+                    using (var engine = new TesseractEngine(TesseractDataPath, "eng", EngineMode.Default))
+                    {
+                        // Configure OCR parameters for better accuracy
+                        engine.SetVariable("tessedit_char_whitelist", 
+                            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,!?@#$%^&*()-_=+[]{}|;:'\",<>./ \n\t");
+                        
+                        // Load and process the image
+                        using (var img = Pix.LoadFromFile(imagePath))
+                        {
+                            using (var page = engine.Process(img))
+                            {
+                                string text = page.GetText();
+                                float confidence = page.GetMeanConfidence();
+
+                                _logger.LogDebug("OCR completed with confidence: {Confidence:F2}%", 
+                                    confidence * 100);
+
+                                // Log warning for low confidence results
+                                if (confidence < 0.7f)
+                                {
+                                    _logger.LogWarning("Low OCR confidence ({Confidence:F2}%) for file: {ImagePath}. " +
+                                        "Consider image preprocessing or manual review.", confidence * 100, imagePath);
+                                }
+
+                                return text?.Trim() ?? string.Empty;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Tesseract OCR failed for image: {ImagePath}", imagePath);
+                    
+                    // Return fallback message instead of throwing to keep the process going
+                    return $"[OCR_ERROR] Failed to extract text from {Path.GetFileName(imagePath)}: {ex.Message}";
+                }
+            });
+        }
+
+        /// <summary>
+        /// Validate if the file type is supported for OCR
+        /// </summary>
+        /// <param name="filePath">Path to the file to validate</param>
+        /// <returns>True if the file type is supported</returns>
+        public bool IsFileTypeSupported(string filePath)
+        {
+            var extension = Path.GetExtension(filePath).ToLowerInvariant();
+            var supportedExtensions = new[] { ".png", ".jpg", ".jpeg", ".tiff", ".tif", ".bmp", ".gif" };
+            
+            bool isSupported = supportedExtensions.Contains(extension);
+            
+            _logger.LogDebug("File type check for {FilePath}: {IsSupported}", filePath, isSupported);
+            
+            return isSupported;
+        }
+
+        /// <summary>
+        /// Get supported file extensions for OCR
+        /// </summary>
+        /// <returns>Array of supported file extensions</returns>
+        public string[] GetSupportedExtensions()
+        {
+            return new[] { ".png", ".jpg", ".jpeg", ".tiff", ".tif", ".bmp", ".gif" };
+        }
+    }
+}
