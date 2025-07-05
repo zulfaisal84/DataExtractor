@@ -1,0 +1,614 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Data;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using DocumentExtractor.Core.Models;
+using DocumentExtractor.Data.Context;
+using DocumentExtractor.Desktop.Models;
+using DocumentExtractor.Desktop.Services;
+using Microsoft.EntityFrameworkCore;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Platform.Storage;
+
+namespace DocumentExtractor.Desktop.ViewModels;
+
+/// <summary>
+/// ViewModel for the Visual Template Mapping interface.
+/// Handles template preview, click-to-teach field mapping, and visual position overlay.
+/// </summary>
+public partial class TemplateMappingViewModel : ViewModelBase
+{
+    private readonly DocumentExtractionContext _context;
+    private readonly ExcelDataService _excelDataService;
+
+    [ObservableProperty]
+    private string _statusMessage = "Ready for template mapping";
+
+    [ObservableProperty]
+    private bool _isProcessing = false;
+
+    [ObservableProperty]
+    private Template? _currentTemplate;
+
+    [ObservableProperty]
+    private string? _templatePreviewPath;
+
+    [ObservableProperty]
+    private bool _isTemplateLoaded = false;
+
+    [ObservableProperty]
+    private string _mappingInstructions = "Upload a template to begin visual field mapping";
+
+    [ObservableProperty]
+    private double _zoomLevel = 1.0;
+
+    [ObservableProperty]
+    private bool _isMappingMode = false;
+
+    [ObservableProperty]
+    private string _currentFieldName = "";
+
+    [ObservableProperty]
+    private string _currentFieldDescription = "";
+
+    [ObservableProperty]
+    private DataTable? _excelData;
+
+    [ObservableProperty]
+    private ExcelGridData? _excelGridData;
+
+    [ObservableProperty]
+    private ObservableCollection<ExcelRowData> _excelRows = new();
+
+    [ObservableProperty]
+    private List<string> _excelColumns = new();
+
+    [ObservableProperty]
+    private string _selectedCellReference = "";
+
+    [ObservableProperty]
+    private int _selectedRow = -1;
+
+    [ObservableProperty]
+    private int _selectedColumn = -1;
+
+    /// <summary>
+    /// Whether Excel data is available for display
+    /// </summary>
+    public bool HasExcelData => ExcelRows != null && ExcelRows.Count > 0;
+
+    /// <summary>
+    /// Collection of field mappings for the current template
+    /// </summary>
+    public ObservableCollection<TemplateFieldMapping> FieldMappings { get; } = new();
+
+    /// <summary>
+    /// Collection of available field types for mapping
+    /// </summary>
+    public ObservableCollection<string> AvailableFieldTypes { get; } = new()
+    {
+        "Total Amount",
+        "Invoice Number", 
+        "Date",
+        "Company Name",
+        "Account Number",
+        "Due Date",
+        "Tax Amount",
+        "Subtotal",
+        "Custom Field"
+    };
+
+    public TemplateMappingViewModel(DocumentExtractionContext context)
+    {
+        _context = context ?? throw new ArgumentNullException(nameof(context));
+        _excelDataService = new ExcelDataService();
+        Console.WriteLine("🗺️ TemplateMappingViewModel initialized with Excel data service");
+    }
+
+    /// <summary>
+    /// Load a template for visual mapping
+    /// </summary>
+    [RelayCommand]
+    private async Task LoadTemplate()
+    {
+        try
+        {
+            IsProcessing = true;
+            StatusMessage = "Opening template selection...";
+
+            // First check if Database.xlsx template already exists in database
+            var existingTemplate = await _context.Templates
+                .FirstOrDefaultAsync(t => t.FileName == "Database.xlsx");
+
+            if (existingTemplate != null)
+            {
+                StatusMessage = "Loading existing template from database...";
+                CurrentTemplate = existingTemplate;
+                await LoadExistingMappings();
+                
+                // Set up template preview
+                TemplatePreviewPath = existingTemplate.FilePath;
+                
+                // Load Excel data if it's an Excel file
+                if (existingTemplate.FileExtension == ".xlsx" || existingTemplate.FileExtension == ".xls")
+                {
+                    await LoadExcelData(existingTemplate.FilePath);
+                }
+                
+                IsTemplateLoaded = true;
+                MappingInstructions = GetMappingInstructions(existingTemplate.FileExtension);
+                
+                StatusMessage = $"Loaded existing template: {existingTemplate.FileName}";
+                Console.WriteLine($"📋 Existing template loaded: {existingTemplate.FileName}");
+                return;
+            }
+
+            // If no existing template, open file picker for new template selection
+            var files = await OpenFilePickerAsync("Select Template for Visual Mapping", new[] {
+                "Excel files (*.xlsx;*.xls)",
+                "PDF files (*.pdf)",
+                "Word files (*.docx;*.doc)",
+                "Image files (*.png;*.jpg;*.jpeg)",
+                "All files (*.*)"
+            });
+
+            if (files != null && files.Count > 0)
+            {
+                var filePath = files[0];
+                await ProcessSelectedTemplate(filePath);
+            }
+            else
+            {
+                StatusMessage = "Template selection cancelled";
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error loading template: {ex.Message}";
+            Console.WriteLine($"❌ Error in LoadTemplate: {ex.Message}");
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    /// <summary>
+    /// Process the selected template file
+    /// </summary>
+    private async Task ProcessSelectedTemplate(string filePath)
+    {
+        try
+        {
+            var fileName = Path.GetFileName(filePath);
+            var extension = Path.GetExtension(filePath).ToLowerInvariant();
+
+            StatusMessage = $"Processing template: {fileName}";
+
+            // Check if template already exists in database
+            var existingTemplate = await _context.Templates
+                .FirstOrDefaultAsync(t => t.FileName == fileName);
+
+            if (existingTemplate != null)
+            {
+                CurrentTemplate = existingTemplate;
+                await LoadExistingMappings();
+                StatusMessage = $"Loaded existing template: {fileName}";
+            }
+            else
+            {
+                // Create new template entry
+                var newTemplate = new Template
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Name = Path.GetFileNameWithoutExtension(fileName),
+                    Description = $"Template for visual field mapping: {fileName}",
+                    Category = DetermineTemplateCategory(extension),
+                    FilePath = filePath,
+                    FileName = fileName,
+                    FileSizeBytes = new FileInfo(filePath).Length,
+                    CreatedDate = DateTime.Now,
+                    LastUsedDate = DateTime.Now,
+                    UsageCount = 0,
+                    IsActive = true
+                };
+
+                _context.Templates.Add(newTemplate);
+                await _context.SaveChangesAsync();
+
+                CurrentTemplate = newTemplate;
+                StatusMessage = $"New template created: {fileName}";
+            }
+
+            // Set up template preview
+            TemplatePreviewPath = filePath;
+            
+            // Load Excel data if it's an Excel file
+            if (extension == ".xlsx" || extension == ".xls")
+            {
+                await LoadExcelData(filePath);
+            }
+            
+            IsTemplateLoaded = true;
+            MappingInstructions = GetMappingInstructions(extension);
+
+            Console.WriteLine($"📋 Template loaded successfully: {fileName}");
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error processing template: {ex.Message}";
+            Console.WriteLine($"❌ Error in ProcessSelectedTemplate: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Load existing field mappings for the current template
+    /// </summary>
+    private async Task LoadExistingMappings()
+    {
+        if (CurrentTemplate == null) return;
+
+        try
+        {
+            var mappings = await _context.TemplateFieldMappings
+                .Where(m => m.TemplateId == CurrentTemplate.Id)
+                .OrderBy(m => m.CreatedDate)
+                .ToListAsync();
+
+            FieldMappings.Clear();
+            foreach (var mapping in mappings)
+            {
+                FieldMappings.Add(mapping);
+            }
+
+            Console.WriteLine($"📊 Loaded {mappings.Count} existing field mappings");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error loading existing mappings: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Load Excel data from file into DataTable for grid display
+    /// </summary>
+    private async Task LoadExcelData(string filePath)
+    {
+        try
+        {
+            StatusMessage = "Loading Excel data...";
+            
+            ExcelGridData = await _excelDataService.ReadExcelFileAsync(filePath);
+            ExcelData = ExcelGridData.DataTable;
+            ExcelRows = ExcelGridData.ExcelRows;
+            ExcelColumns = ExcelGridData.ColumnNames;
+            
+            // Notify property changes
+            OnPropertyChanged(nameof(HasExcelData));
+            
+            StatusMessage = $"Excel data loaded: {ExcelRows.Count} rows, {ExcelColumns.Count} columns";
+            Console.WriteLine($"📊 Excel grid data ready: {ExcelGridData.WorksheetName} worksheet");
+            Console.WriteLine($"🔍 HasExcelData: {HasExcelData}");
+            Console.WriteLine($"🔍 ExcelRows count: {ExcelRows.Count}");
+            Console.WriteLine($"🔍 ExcelColumns: {string.Join(", ", ExcelColumns)}");
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error loading Excel data: {ex.Message}";
+            Console.WriteLine($"❌ Error loading Excel data: {ex.Message}");
+            
+            // Create empty collections as fallback
+            ExcelData = new DataTable();
+            ExcelRows = new ObservableCollection<ExcelRowData>();
+            ExcelColumns = new List<string>();
+            ExcelGridData = new ExcelGridData 
+            { 
+                DataTable = ExcelData,
+                ExcelRows = ExcelRows,
+                ColumnNames = ExcelColumns
+            };
+        }
+    }
+
+    /// <summary>
+    /// Start field mapping mode
+    /// </summary>
+    [RelayCommand]
+    private void StartMapping()
+    {
+        if (!IsTemplateLoaded)
+        {
+            StatusMessage = "Please load a template first";
+            return;
+        }
+
+        IsMappingMode = true;
+        StatusMessage = "Click on template to map fields. Press ESC to exit mapping mode.";
+        MappingInstructions = "🎯 MAPPING MODE ACTIVE\n\n1. Click on any cell/field in the template\n2. Specify what data goes there\n3. I'll remember the mapping for future use";
+    }
+
+    /// <summary>
+    /// Exit field mapping mode
+    /// </summary>
+    [RelayCommand]
+    private void ExitMapping()
+    {
+        IsMappingMode = false;
+        CurrentFieldName = "";
+        CurrentFieldDescription = "";
+        StatusMessage = "Mapping mode disabled";
+        MappingInstructions = IsTemplateLoaded ? 
+            GetMappingInstructions(Path.GetExtension(TemplatePreviewPath).ToLowerInvariant()) :
+            "Upload a template to begin visual field mapping";
+    }
+
+    /// <summary>
+    /// Handle DataGrid cell selection for Excel mapping
+    /// </summary>
+    public void HandleCellSelection(int row, int column)
+    {
+        if (!IsMappingMode || ExcelGridData == null) return;
+
+        try
+        {
+            SelectedRow = row;
+            SelectedColumn = column;
+            
+            // Convert DataGrid position to Excel cell reference
+            SelectedCellReference = ExcelDataService.GetCellReferenceFromGridPosition(
+                row, column, ExcelGridData.StartRow, ExcelGridData.StartColumn);
+            
+            // Get cell value for display
+            var cellValue = "";
+            if (ExcelRows != null && row < ExcelRows.Count && column < ExcelColumns.Count)
+            {
+                cellValue = ExcelRows[row].GetCellByIndex(column, ExcelColumns);
+            }
+            
+            StatusMessage = $"Selected cell {SelectedCellReference}" + 
+                          (string.IsNullOrEmpty(cellValue) ? "" : $" ('{cellValue}')");
+            
+            Console.WriteLine($"🎯 Cell selected: {SelectedCellReference} at grid position ({row}, {column})");
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error selecting cell: {ex.Message}";
+            Console.WriteLine($"❌ Error in HandleCellSelection: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Handle click on template coordinate (legacy support)
+    /// </summary>
+    public async Task HandleTemplateClick(double x, double y)
+    {
+        if (!IsMappingMode || CurrentTemplate == null) return;
+
+        try
+        {
+            StatusMessage = $"Clicked at position ({x:F0}, {y:F0})";
+            
+            // For non-Excel templates, keep coordinate-based mapping
+            Console.WriteLine($"🎯 Template clicked at ({x:F0}, {y:F0}) - Ready for field mapping");
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error handling template click: {ex.Message}";
+            Console.WriteLine($"❌ Error in HandleTemplateClick: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Save a new field mapping
+    /// </summary>
+    [RelayCommand]
+    private async Task SaveFieldMapping()
+    {
+        if (CurrentTemplate == null || string.IsNullOrWhiteSpace(CurrentFieldName))
+        {
+            StatusMessage = "Please specify field name and select a cell";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(SelectedCellReference) && SelectedRow == -1)
+        {
+            StatusMessage = "Please select a cell to map this field to";
+            return;
+        }
+
+        try
+        {
+            var targetLocation = !string.IsNullOrWhiteSpace(SelectedCellReference) 
+                ? SelectedCellReference 
+                : $"Row{SelectedRow}Col{SelectedColumn}";
+
+            var mapping = new TemplateFieldMapping
+            {
+                Id = Guid.NewGuid().ToString(),
+                TemplateId = CurrentTemplate.Id,
+                FieldName = CurrentFieldName,
+                LocationType = DetermineFieldType(CurrentFieldName),
+                TargetLocation = targetLocation,
+                Description = CurrentFieldDescription,
+                CreatedDate = DateTime.Now
+            };
+
+            _context.TemplateFieldMappings.Add(mapping);
+            await _context.SaveChangesAsync();
+
+            FieldMappings.Add(mapping);
+
+            // Clear current selection
+            CurrentFieldName = "";
+            CurrentFieldDescription = "";
+            SelectedCellReference = "";
+            SelectedRow = -1;
+            SelectedColumn = -1;
+            
+            StatusMessage = $"Field mapping saved to {targetLocation}";
+
+            Console.WriteLine($"💾 Field mapping saved: {mapping.FieldName} → {targetLocation}");
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error saving field mapping: {ex.Message}";
+            Console.WriteLine($"❌ Error in SaveFieldMapping: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Zoom in on template preview
+    /// </summary>
+    [RelayCommand]
+    private void ZoomIn()
+    {
+        ZoomLevel = Math.Min(ZoomLevel + 0.25, 3.0);
+        StatusMessage = $"Zoom: {ZoomLevel:P0}";
+    }
+
+    /// <summary>
+    /// Zoom out on template preview
+    /// </summary>
+    [RelayCommand]
+    private void ZoomOut()
+    {
+        ZoomLevel = Math.Max(ZoomLevel - 0.25, 0.25);
+        StatusMessage = $"Zoom: {ZoomLevel:P0}";
+    }
+
+    /// <summary>
+    /// Reset zoom to 100%
+    /// </summary>
+    [RelayCommand]
+    private void ResetZoom()
+    {
+        ZoomLevel = 1.0;
+        StatusMessage = "Zoom reset to 100%";
+    }
+
+    /// <summary>
+    /// Get mapping instructions based on file type
+    /// </summary>
+    private string GetMappingInstructions(string extension)
+    {
+        return extension switch
+        {
+            ".xlsx" or ".xls" => "📊 EXCEL TEMPLATE\n\n• Click on cells to map data fields\n• Specify cell references (e.g., 'D15', 'B8')\n• Perfect for structured reports and forms",
+            ".pdf" => "📄 PDF TEMPLATE\n\n• Click on form fields or text areas\n• Map to specific field names\n• Works with fillable PDF forms",
+            ".docx" or ".doc" => "📝 WORD TEMPLATE\n\n• Click on tables or bookmarks\n• Map to document sections\n• Good for text-based reports",
+            _ => "📋 TEMPLATE MAPPING\n\n• Click anywhere to define field positions\n• Describe what data belongs there\n• Build smart automation patterns"
+        };
+    }
+
+    /// <summary>
+    /// Determine template category from file extension
+    /// </summary>
+    private string DetermineTemplateCategory(string extension)
+    {
+        return extension switch
+        {
+            ".xlsx" or ".xls" => "Excel Spreadsheet",
+            ".pdf" => "PDF Form",
+            ".docx" or ".doc" => "Word Document",
+            ".png" or ".jpg" or ".jpeg" => "Image Template",
+            _ => "General Template"
+        };
+    }
+
+    /// <summary>
+    /// Determine field type from field name
+    /// </summary>
+    private string DetermineFieldType(string fieldName)
+    {
+        var lower = fieldName.ToLowerInvariant();
+        
+        if (lower.Contains("total") || lower.Contains("amount")) return "Currency";
+        if (lower.Contains("date")) return "Date";
+        if (lower.Contains("number") || lower.Contains("id")) return "Text";
+        if (lower.Contains("name") || lower.Contains("company")) return "Text";
+        
+        return "Text";
+    }
+
+    /// <summary>
+    /// Open file picker using Avalonia's file picker
+    /// </summary>
+    private async Task<IReadOnlyList<string>?> OpenFilePickerAsync(string title, string[] filters)
+    {
+        try
+        {
+            // Get the main window
+            var mainWindow = Avalonia.Application.Current?.ApplicationLifetime is 
+                Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
+                ? desktop.MainWindow : null;
+
+            if (mainWindow == null)
+            {
+                Console.WriteLine("❌ No main window available for file picker");
+                return null;
+            }
+
+            // Create file type filters for Avalonia
+            var fileTypeFilters = new List<Avalonia.Platform.Storage.FilePickerFileType>();
+            
+            // Excel files
+            fileTypeFilters.Add(new Avalonia.Platform.Storage.FilePickerFileType("Excel Files")
+            {
+                Patterns = new[] { "*.xlsx", "*.xls" }
+            });
+            
+            // PDF files
+            fileTypeFilters.Add(new Avalonia.Platform.Storage.FilePickerFileType("PDF Files")
+            {
+                Patterns = new[] { "*.pdf" }
+            });
+            
+            // Word files
+            fileTypeFilters.Add(new Avalonia.Platform.Storage.FilePickerFileType("Word Files")
+            {
+                Patterns = new[] { "*.docx", "*.doc" }
+            });
+            
+            // Image files
+            fileTypeFilters.Add(new Avalonia.Platform.Storage.FilePickerFileType("Image Files")
+            {
+                Patterns = new[] { "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.tiff" }
+            });
+            
+            // All files
+            fileTypeFilters.Add(new Avalonia.Platform.Storage.FilePickerFileType("All Files")
+            {
+                Patterns = new[] { "*.*" }
+            });
+
+            var options = new Avalonia.Platform.Storage.FilePickerOpenOptions
+            {
+                Title = title,
+                AllowMultiple = false,
+                FileTypeFilter = fileTypeFilters
+            };
+
+            var result = await mainWindow.StorageProvider.OpenFilePickerAsync(options);
+            
+            if (result?.Count > 0)
+            {
+                var filePaths = result.Select(f => f.Path.LocalPath).ToList();
+                Console.WriteLine($"📁 File selected: {filePaths[0]}");
+                return filePaths;
+            }
+            
+            Console.WriteLine($"🗂️ File picker cancelled: {title}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error in file picker: {ex.Message}");
+            return null;
+        }
+    }
+}

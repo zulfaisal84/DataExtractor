@@ -41,6 +41,18 @@ namespace DocumentExtractor.Data.Context
         public DbSet<LearnedPattern> Patterns { get; set; } = null!;
 
         /// <summary>
+        /// Table for storing user templates for automated data filling.
+        /// Templates are Excel, Word, PDF files that users upload to teach the AI.
+        /// </summary>
+        public DbSet<Template> Templates { get; set; } = null!;
+
+        /// <summary>
+        /// Table for storing field mappings between extracted data and template locations.
+        /// Defines where each piece of extracted data should be placed in templates.
+        /// </summary>
+        public DbSet<TemplateFieldMapping> TemplateFieldMappings { get; set; } = null!;
+
+        /// <summary>
         /// Default constructor for dependency injection and migrations.
         /// </summary>
         public DocumentExtractionContext()
@@ -112,6 +124,12 @@ namespace DocumentExtractor.Data.Context
             
             // Configure LearnedPattern entity
             ConfigureLearnedPattern(modelBuilder);
+            
+            // Configure Template entity
+            ConfigureTemplate(modelBuilder);
+            
+            // Configure TemplateFieldMapping entity
+            ConfigureTemplateFieldMapping(modelBuilder);
 
             // Set up database indexes for better query performance
             ConfigureIndexes(modelBuilder);
@@ -304,6 +322,110 @@ namespace DocumentExtractor.Data.Context
         }
 
         /// <summary>
+        /// Configure the Template entity for database storage.
+        /// </summary>
+        /// <param name="modelBuilder">Model builder instance</param>
+        private static void ConfigureTemplate(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Template>(entity =>
+            {
+                // Primary key
+                entity.HasKey(e => e.Id);
+                
+                // Configure string properties with appropriate lengths
+                entity.Property(e => e.Name)
+                    .IsRequired()
+                    .HasMaxLength(200);
+                
+                entity.Property(e => e.Description)
+                    .HasMaxLength(500);
+                
+                entity.Property(e => e.Category)
+                    .HasMaxLength(100);
+                
+                entity.Property(e => e.FilePath)
+                    .IsRequired()
+                    .HasMaxLength(500);
+                
+                entity.Property(e => e.FileName)
+                    .IsRequired()
+                    .HasMaxLength(255);
+                
+                entity.Property(e => e.FileExtension)
+                    .HasMaxLength(10);
+                
+                entity.Property(e => e.PreviewImagePath)
+                    .HasMaxLength(500);
+                
+                // Configure date properties for SQLite
+                entity.Property(e => e.CreatedDate)
+                    .HasColumnType("TEXT")
+                    .HasConversion(
+                        v => v.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        v => DateTime.Parse(v));
+                
+                entity.Property(e => e.LastUsedDate)
+                    .HasColumnType("TEXT")
+                    .HasConversion(
+                        v => v != null ? v.Value.ToString("yyyy-MM-ddTHH:mm:ss.fffZ") : null,
+                        v => v != null ? DateTime.Parse(v) : null);
+                
+                // Configure the one-to-many relationship with TemplateFieldMapping
+                entity.HasMany(e => e.FieldMappings)
+                    .WithOne(f => f.Template)
+                    .HasForeignKey(f => f.TemplateId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+        }
+
+        /// <summary>
+        /// Configure the TemplateFieldMapping entity for database storage.
+        /// </summary>
+        /// <param name="modelBuilder">Model builder instance</param>
+        private static void ConfigureTemplateFieldMapping(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<TemplateFieldMapping>(entity =>
+            {
+                // Primary key
+                entity.HasKey(e => e.Id);
+                
+                // Configure string properties
+                entity.Property(e => e.TemplateId)
+                    .IsRequired();
+                
+                entity.Property(e => e.FieldName)
+                    .IsRequired()
+                    .HasMaxLength(100);
+                
+                entity.Property(e => e.TargetLocation)
+                    .IsRequired()
+                    .HasMaxLength(100);
+                
+                entity.Property(e => e.LocationType)
+                    .HasMaxLength(50);
+                
+                entity.Property(e => e.FormatInstructions)
+                    .HasMaxLength(200);
+                
+                entity.Property(e => e.Description)
+                    .HasMaxLength(200);
+                
+                // Configure date property for SQLite
+                entity.Property(e => e.CreatedDate)
+                    .HasColumnType("TEXT")
+                    .HasConversion(
+                        v => v.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        v => DateTime.Parse(v));
+                
+                // Configure the many-to-one relationship with Template
+                entity.HasOne(e => e.Template)
+                    .WithMany(t => t.FieldMappings)
+                    .HasForeignKey(e => e.TemplateId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+        }
+
+        /// <summary>
         /// Configure database indexes for better query performance.
         /// Indexes speed up queries but take additional storage space.
         /// </summary>
@@ -337,6 +459,28 @@ namespace DocumentExtractor.Data.Context
             modelBuilder.Entity<LearnedPattern>()
                 .HasIndex(e => e.SuccessRate)
                 .HasDatabaseName("IX_Patterns_SuccessRate");
+
+            // Template indexes for fast lookups
+            modelBuilder.Entity<Template>()
+                .HasIndex(e => e.Category)
+                .HasDatabaseName("IX_Templates_Category");
+            
+            modelBuilder.Entity<Template>()
+                .HasIndex(e => e.CreatedDate)
+                .HasDatabaseName("IX_Templates_CreatedDate");
+            
+            modelBuilder.Entity<Template>()
+                .HasIndex(e => e.LastUsedDate)
+                .HasDatabaseName("IX_Templates_LastUsedDate");
+
+            // Template field mapping indexes
+            modelBuilder.Entity<TemplateFieldMapping>()
+                .HasIndex(e => e.TemplateId)
+                .HasDatabaseName("IX_TemplateFieldMappings_TemplateId");
+            
+            modelBuilder.Entity<TemplateFieldMapping>()
+                .HasIndex(e => e.FieldName)
+                .HasDatabaseName("IX_TemplateFieldMappings_FieldName");
         }
 
         /// <summary>

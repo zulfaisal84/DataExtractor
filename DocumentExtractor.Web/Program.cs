@@ -51,10 +51,10 @@ builder.Services.AddDbContext<DocumentExtractionContext>(options =>
     }
 });
 
-// Register document processing services (temporarily using simulation until OCR interface is complete)
-// builder.Services.AddScoped<ITextExtractor, TesseractTextExtractor>();
-// builder.Services.AddScoped<DocumentUploadService>();
-// builder.Services.AddScoped<RealDocumentProcessor>();
+// Register OCR and document processing services
+builder.Services.AddScoped<ITextExtractor, TesseractTextExtractor>();
+builder.Services.AddScoped<DocumentUploadService>();
+builder.Services.AddScoped<RealDocumentProcessor>();
 
 var app = builder.Build();
 

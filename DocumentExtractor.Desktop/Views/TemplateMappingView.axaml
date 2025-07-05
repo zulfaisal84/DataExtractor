@@ -1,0 +1,307 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DocumentExtractor.Desktop.ViewModels"
+             x:Class="DocumentExtractor.Desktop.Views.TemplateMappingView"
+             x:DataType="vm:TemplateMappingViewModel">
+
+    <Design.DataContext>
+        <vm:TemplateMappingViewModel />
+    </Design.DataContext>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Header Section -->
+        <Border Grid.Row="0" Background="DarkBlue" CornerRadius="8" Padding="15" Margin="0,0,0,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="🗺️ Visual Template Mapping" 
+                              FontSize="20" FontWeight="Bold" 
+                              Foreground="White"/>
+                    <TextBlock Text="Click-to-teach field mapping • Visual template preview • Automated filling" 
+                              FontSize="12" Foreground="LightBlue" Margin="0,3,0,0"/>
+                </StackPanel>
+                
+                <StackPanel Grid.Column="1" HorizontalAlignment="Right" Spacing="10" Orientation="Horizontal">
+                    <Button Content="📂 Load Template" 
+                            Command="{Binding LoadTemplateCommand}"
+                            Background="ForestGreen" Foreground="White"
+                            Padding="10,5" CornerRadius="5"/>
+                    <Button Content="🎯 Start Mapping"
+                            Command="{Binding StartMappingCommand}"
+                            Background="Orange" Foreground="White"
+                            Padding="10,5" CornerRadius="5"
+                            IsEnabled="{Binding IsTemplateLoaded}"/>
+                    <Button Content="🛑 Exit Mapping"
+                            Command="{Binding ExitMappingCommand}"
+                            Background="Red" Foreground="White"
+                            Padding="10,5" CornerRadius="5"
+                            IsEnabled="{Binding IsMappingMode}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Main Content Area -->
+        <Grid Grid.Row="1" ColumnDefinitions="2*,*" Margin="0,0,0,10">
+            
+            <!-- Template Preview Panel -->
+            <Border Grid.Column="0" Background="White" BorderBrush="LightGray" BorderThickness="1" 
+                    CornerRadius="8" Padding="10" Margin="0,0,10,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- Preview Header -->
+                    <Grid Grid.Row="0" Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <TextBlock Grid.Column="0" Text="📋 Template Preview" 
+                                  FontSize="16" FontWeight="Bold" VerticalAlignment="Center"/>
+                        
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5">
+                            <Button Content="🔍+" Command="{Binding ZoomInCommand}" 
+                                   Width="30" Height="30" Padding="0"/>
+                            <Button Content="🔍-" Command="{Binding ZoomOutCommand}" 
+                                   Width="30" Height="30" Padding="0"/>
+                            <Button Content="🔄" Command="{Binding ResetZoomCommand}" 
+                                   Width="30" Height="30" Padding="0"/>
+                            <TextBlock Text="{Binding ZoomLevel, StringFormat={}{0:P0}}" 
+                                      VerticalAlignment="Center" Margin="5,0"/>
+                        </StackPanel>
+                    </Grid>
+                    
+                    <!-- Template Display Area -->
+                    <Border Grid.Row="1" Background="WhiteSmoke" BorderBrush="Gray" BorderThickness="1" 
+                            CornerRadius="5" ClipToBounds="True">
+                        <Grid Background="White">
+                            
+                            <!-- Empty State -->
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" 
+                                       IsVisible="{Binding !IsTemplateLoaded}">
+                                <TextBlock Text="📂" FontSize="48" HorizontalAlignment="Center" 
+                                          Foreground="LightGray"/>
+                                <TextBlock Text="Load a template to begin visual mapping" 
+                                          FontSize="14" Foreground="Gray" HorizontalAlignment="Center" 
+                                          Margin="0,10,0,0"/>
+                            </StackPanel>
+                            
+                            <!-- Excel DataGrid (for Excel files) -->
+                            <DataGrid IsVisible="{Binding HasExcelData}"
+                                     ItemsSource="{Binding ExcelRows}"
+                                     AutoGenerateColumns="False"
+                                     GridLinesVisibility="All"
+                                     HeadersVisibility="All"
+                                     CanUserReorderColumns="False"
+                                     CanUserResizeColumns="True"
+                                     CanUserSortColumns="False"
+                                     IsReadOnly="True"
+                                     SelectionMode="Single"
+                                     Background="White"
+                                     RowBackground="White"
+                                     BorderBrush="LightGray"
+                                     BorderThickness="1"
+                                     MinHeight="200"
+                                     MinWidth="400"
+                                     CellPointerPressed="OnCellClicked"
+                                     Name="ExcelDataGrid">
+                                
+                                <!-- Define columns manually for Excel A, B, C, D... -->
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="A" Binding="{Binding Cells[A]}" Width="80"/>
+                                    <DataGridTextColumn Header="B" Binding="{Binding Cells[B]}" Width="80"/>
+                                    <DataGridTextColumn Header="C" Binding="{Binding Cells[C]}" Width="80"/>
+                                    <DataGridTextColumn Header="D" Binding="{Binding Cells[D]}" Width="80"/>
+                                    <DataGridTextColumn Header="E" Binding="{Binding Cells[E]}" Width="80"/>
+                                    <DataGridTextColumn Header="F" Binding="{Binding Cells[F]}" Width="80"/>
+                                    <DataGridTextColumn Header="G" Binding="{Binding Cells[G]}" Width="80"/>
+                                    <DataGridTextColumn Header="H" Binding="{Binding Cells[H]}" Width="80"/>
+                                    <DataGridTextColumn Header="I" Binding="{Binding Cells[I]}" Width="80"/>
+                                    <DataGridTextColumn Header="J" Binding="{Binding Cells[J]}" Width="80"/>
+                                </DataGrid.Columns>
+                                <DataGrid.Styles>
+                                    <Style Selector="DataGridColumnHeader">
+                                        <Setter Property="Background" Value="#E3F2FD"/>
+                                        <Setter Property="Foreground" Value="#1976D2"/>
+                                        <Setter Property="FontWeight" Value="Bold"/>
+                                        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                        <Setter Property="Padding" Value="8,4"/>
+                                    </Style>
+                                    <Style Selector="DataGridRowHeader">
+                                        <Setter Property="Background" Value="#E3F2FD"/>
+                                        <Setter Property="Foreground" Value="#1976D2"/>
+                                        <Setter Property="FontWeight" Value="Bold"/>
+                                        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                        <Setter Property="Width" Value="40"/>
+                                    </Style>
+                                    <Style Selector="DataGridCell">
+                                        <Setter Property="Padding" Value="4,2"/>
+                                        <Setter Property="BorderBrush" Value="LightGray"/>
+                                        <Setter Property="BorderThickness" Value="0,0,1,1"/>
+                                    </Style>
+                                    <Style Selector="DataGridCell:selected">
+                                        <Setter Property="Background" Value="#BBDEFB"/>
+                                        <Setter Property="Foreground" Value="Black"/>
+                                    </Style>
+                                </DataGrid.Styles>
+                            </DataGrid>
+                            
+                            <!-- Non-Excel Template Preview (fallback) -->
+                            <Border IsVisible="False"
+                                   Background="LightBlue" CornerRadius="5" Padding="20" 
+                                   MinWidth="300" MinHeight="200"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   PointerPressed="OnTemplateClicked"
+                                   Cursor="Hand">
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           IsVisible="{Binding IsTemplateLoaded}">
+                                    <TextBlock Text="📊" FontSize="36" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding CurrentTemplate.FileName}" 
+                                              FontSize="16" FontWeight="Bold" 
+                                              HorizontalAlignment="Center" Margin="0,10,0,0"/>
+                                    <TextBlock Text="{Binding CurrentTemplate.Category}" 
+                                              FontSize="12" Foreground="DarkBlue" 
+                                              HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                                    <TextBlock Text="Click anywhere to map fields" 
+                                              FontSize="10" Foreground="Gray" 
+                                              HorizontalAlignment="Center" Margin="0,10,0,0"
+                                              IsVisible="{Binding IsMappingMode}"/>
+                                </StackPanel>
+                            </Border>
+                            
+                        </Grid>
+                    </Border>
+                    
+                    <!-- Mapping Mode Indicator -->
+                    <Border Grid.Row="2" Background="Orange" 
+                           CornerRadius="5" Padding="10" Margin="0,10,0,0"
+                           IsVisible="{Binding IsMappingMode}">
+                        <TextBlock Text="🎯 MAPPING MODE ACTIVE - Click template to map fields" 
+                                  Foreground="White" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    </Border>
+                </Grid>
+            </Border>
+            
+            <!-- Mapping Control Panel -->
+            <Border Grid.Column="1" Background="White" BorderBrush="LightGray" BorderThickness="1" 
+                    CornerRadius="8" Padding="15">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- Control Panel Header -->
+                    <TextBlock Grid.Row="0" Text="🎯 Field Mapping Controls" 
+                              FontSize="16" FontWeight="Bold" Margin="0,0,0,15"/>
+                    
+                    <!-- Field Input Section -->
+                    <StackPanel Grid.Row="1" Spacing="10" Margin="0,0,0,15">
+                        <TextBlock Text="Field Details:" FontWeight="Bold"/>
+                        
+                        <TextBox Watermark="Field name (e.g., 'Total Amount')" 
+                                Text="{Binding CurrentFieldName}"
+                                IsEnabled="{Binding IsMappingMode}"/>
+                        
+                        <ComboBox ItemsSource="{Binding AvailableFieldTypes}" 
+                                 SelectedItem="{Binding CurrentFieldName}"
+                                 PlaceholderText="Select field type"
+                                 IsEnabled="{Binding IsMappingMode}"/>
+                        
+                        <TextBox Watermark="Description (optional)" 
+                                Text="{Binding CurrentFieldDescription}"
+                                IsEnabled="{Binding IsMappingMode}"/>
+                        
+                        <Button Content="💾 Save Field Mapping" 
+                               Command="{Binding SaveFieldMappingCommand}"
+                               Background="DarkGreen" Foreground="White"
+                               IsEnabled="{Binding IsMappingMode}" 
+                               HorizontalAlignment="Stretch"/>
+                    </StackPanel>
+                    
+                    <!-- Existing Mappings List -->
+                    <Border Grid.Row="2" Background="WhiteSmoke" BorderBrush="LightGray" 
+                           BorderThickness="1" CornerRadius="5" Padding="10">
+                        <StackPanel>
+                            <TextBlock Text="📊 Current Mappings:" FontWeight="Bold" Margin="0,0,0,10"/>
+                            
+                            <ScrollViewer MaxHeight="200" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding FieldMappings}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="White" BorderBrush="LightBlue" 
+                                                   BorderThickness="1" CornerRadius="3" 
+                                                   Padding="8" Margin="0,2">
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding FieldName}" 
+                                                              FontWeight="Bold" FontSize="12"/>
+                                                    <TextBlock Text="{Binding TargetLocation}" 
+                                                              FontSize="10" Foreground="Blue" FontWeight="Bold"/>
+                                                    <TextBlock Text="{Binding LocationType}" 
+                                                              FontSize="9" Foreground="Gray"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Instructions -->
+                    <Border Grid.Row="3" Background="LightYellow" BorderBrush="Orange" 
+                           BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,15,0,0">
+                        <TextBlock Text="{Binding MappingInstructions}" 
+                                  FontSize="11" Foreground="DarkOrange" 
+                                  TextWrapping="Wrap"/>
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
+        
+        <!-- Status Bar -->
+        <Border Grid.Row="2" Background="DarkGray" CornerRadius="5" Padding="10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" 
+                          Foreground="White" VerticalAlignment="Center"/>
+                
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                    <TextBlock Text="{Binding SelectedCellReference}" 
+                              Foreground="Yellow" VerticalAlignment="Center" FontWeight="Bold"
+                              IsVisible="{Binding SelectedCellReference, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    <TextBlock Text="{Binding FieldMappings.Count, StringFormat='{}{0} mappings'}" 
+                              Foreground="LightGray" VerticalAlignment="Center"/>
+                    <Rectangle Width="12" Height="12" Fill="Green"
+                              VerticalAlignment="Center"
+                              IsVisible="{Binding IsTemplateLoaded}"/>
+                    <Rectangle Width="12" Height="12" Fill="Red"
+                              VerticalAlignment="Center"
+                              IsVisible="{Binding !IsTemplateLoaded}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+        
+    </Grid>
+
+</UserControl>

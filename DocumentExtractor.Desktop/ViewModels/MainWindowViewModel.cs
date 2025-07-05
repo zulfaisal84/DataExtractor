@@ -58,6 +58,11 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private ObservableCollection<ExtractedDocument> _documents = new();
 
+    /// <summary>
+    /// Template mapping view model for visual field mapping
+    /// </summary>
+    public TemplateMappingViewModel TemplateMappingViewModel { get; }
+
     #endregion
 
     #region Commands
@@ -202,6 +207,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
             // Initialize database context safely
             _context = new DocumentExtractionContext();
+            
+            // Initialize Template Mapping ViewModel
+            TemplateMappingViewModel = new TemplateMappingViewModel(_context);
             
             // Initialize the application asynchronously
             _ = InitializeAsync();
