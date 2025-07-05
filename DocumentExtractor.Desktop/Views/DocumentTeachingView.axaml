@@ -8,46 +8,46 @@
         <vm:ConversationalLearningViewModel/>
     </Design.DataContext>
 
-    <Grid Margin="10">
+    <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         
-        <!-- Header -->
-        <Border Grid.Row="0" Background="DarkBlue" CornerRadius="10,10,0,0" Padding="20" Margin="0,0,0,10">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                
-                <StackPanel Grid.Column="0">
-                    <TextBlock Text="🎓 Document Intelligence Training Center" 
-                              FontSize="20" FontWeight="Bold" 
-                              Foreground="White"/>
-                    <TextBlock Text="Upload documents • Train AI patterns • Build document intelligence • Track learning progress" 
-                              FontSize="12" Foreground="LightBlue" Margin="0,3,0,0"/>
-                </StackPanel>
-                
-                <StackPanel Grid.Column="1" HorizontalAlignment="Right">
-                    <TextBlock Text="{Binding StatusMessage}" FontSize="12" Foreground="White" FontWeight="Bold"/>
-                    <TextBlock Text="Ready for AI training" FontSize="10" Foreground="LightBlue"/>
-                </StackPanel>
-            </Grid>
-        </Border>
+        <!-- Clean Header -->
+        <Grid Grid.Row="0" Margin="0,0,0,30">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Document Teaching" 
+                          FontSize="28" FontWeight="Light" 
+                          Foreground="#2C3E50" Margin="0,0,0,5"/>
+                <TextBlock Text="Train AI to read your documents and fill templates automatically" 
+                          FontSize="14" Foreground="#7F8C8D"/>
+            </StackPanel>
+            
+            <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                <TextBlock Text="{Binding StatusMessage}" FontSize="12" Foreground="#27AE60" FontWeight="Medium"/>
+            </StackPanel>
+        </Grid>
         
-        <!-- Main Content Area -->
+        <!-- Clean 3-Step Process -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="20"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             
-            <!-- Document Upload & Training Area -->
-            <Border Grid.Column="0" Background="White" BorderBrush="LightGray" BorderThickness="1" 
-                    CornerRadius="8" Padding="20" Margin="0,0,10,0">
+            <!-- Step 1: Document Upload -->
+            <Border Grid.Column="0" Background="White" BorderBrush="#E8E8E8" BorderThickness="1" 
+                    CornerRadius="12" Padding="25" 
+                    BoxShadow="0 2 8 0 #00000015">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -55,265 +55,260 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     
-                    <!-- Upload Zone Header -->
-                    <TextBlock Grid.Row="0" Text="📄 Document Training Zone" 
-                              FontSize="18" FontWeight="Bold" 
-                              Margin="0,0,0,20" HorizontalAlignment="Center"/>
+                    <!-- Step Number -->
+                    <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,0,0,20">
+                        <Border Background="#3498DB" CornerRadius="20" Width="40" Height="40">
+                            <TextBlock Text="1" FontSize="18" FontWeight="Bold" 
+                                      Foreground="White" HorizontalAlignment="Center" 
+                                      VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="Upload Document" 
+                                  FontSize="16" FontWeight="Medium" 
+                                  Foreground="#2C3E50" HorizontalAlignment="Center" 
+                                  Margin="0,8,0,0"/>
+                    </StackPanel>
                     
-                    <!-- Main Upload Area -->
+                    <!-- Upload Area -->
                     <Border Grid.Row="1" 
                            Background="#F8F9FA" 
-                           BorderBrush="DarkBlue" 
+                           BorderBrush="#E8E8E8" 
                            BorderThickness="2" 
-                           CornerRadius="15" 
-                           Padding="30"
-                           MinHeight="300">
+                           CornerRadius="8" 
+                           Padding="20"
+                           MinHeight="200">
                         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                             <!-- Upload Icon -->
-                            <TextBlock Text="📁" FontSize="64" HorizontalAlignment="Center" 
-                                      Foreground="DarkBlue" Margin="0,0,0,20"/>
+                            <TextBlock Text="📄" FontSize="32" HorizontalAlignment="Center" 
+                                      Foreground="#7F8C8D" Margin="0,0,0,12"/>
                             
                             <!-- Upload Instructions -->
-                            <TextBlock Text="Drag &amp; Drop Documents Here" 
-                                      FontSize="18" FontWeight="Bold" 
+                            <TextBlock Text="Drop files here or click to browse" 
+                                      FontSize="14" FontWeight="Medium" 
                                       HorizontalAlignment="Center" 
-                                      Foreground="DarkBlue" 
-                                      Margin="0,0,0,10"/>
+                                      Foreground="#2C3E50" 
+                                      Margin="0,0,0,8"/>
                             
-                            <TextBlock Text="or click to browse files" 
-                                      FontSize="14" 
+                            <TextBlock Text="PDF, JPG, PNG supported" 
+                                      FontSize="12" 
                                       HorizontalAlignment="Center" 
-                                      Foreground="Gray" 
-                                      Margin="0,0,0,20"/>
+                                      Foreground="#7F8C8D" 
+                                      Margin="0,0,0,15"/>
                             
-                            <!-- Document Type Icons -->
-                            <Grid Margin="0,0,0,20">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                
-                                <StackPanel Grid.Column="0" HorizontalAlignment="Center">
-                                    <TextBlock Text="⚡" FontSize="24" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="Utility Bills" FontSize="10" HorizontalAlignment="Center" Foreground="Gray"/>
-                                </StackPanel>
-                                
-                                <StackPanel Grid.Column="1" HorizontalAlignment="Center">
-                                    <TextBlock Text="🧾" FontSize="24" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="Invoices" FontSize="10" HorizontalAlignment="Center" Foreground="Gray"/>
-                                </StackPanel>
-                                
-                                <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                                    <TextBlock Text="🏥" FontSize="24" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="Medical" FontSize="10" HorizontalAlignment="Center" Foreground="Gray"/>
-                                </StackPanel>
-                                
-                                <StackPanel Grid.Column="3" HorizontalAlignment="Center">
-                                    <TextBlock Text="💼" FontSize="24" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="Business" FontSize="10" HorizontalAlignment="Center" Foreground="Gray"/>
-                                </StackPanel>
-                            </Grid>
-                            
-                            <!-- Upload Buttons -->
-                            <StackPanel Orientation="Horizontal" Spacing="15">
-                                <Button Content="📄 Upload Document" 
-                                       Command="{Binding UploadDocumentCommand}"
-                                       Background="DarkBlue" Foreground="White"
-                                       Padding="20,10" FontSize="14" FontWeight="Bold"
-                                       CornerRadius="8"/>
-                                
-                                <Button Content="📋 Upload Template" 
-                                       Command="{Binding UploadTemplateCommand}"
-                                       Background="Purple" Foreground="White"
-                                       Padding="20,10" FontSize="14" FontWeight="Bold"
-                                       CornerRadius="8"/>
-                            </StackPanel>
+                            <!-- Upload Button -->
+                            <Button Content="Choose Document" 
+                                   Command="{Binding UploadDocumentCommand}"
+                                   Background="#3498DB" Foreground="White"
+                                   Padding="20,10" FontSize="13" FontWeight="Medium"
+                                   CornerRadius="6" BorderThickness="0"/>
                         </StackPanel>
                     </Border>
                     
-                    <!-- Processing Status -->
+                    <!-- Document Status -->
                     <Border Grid.Row="2" 
-                           Background="LightYellow" 
-                           BorderBrush="Orange" 
-                           BorderThickness="1" 
-                           CornerRadius="5" 
-                           Padding="15" 
-                           Margin="0,20,0,0"
-                           IsVisible="{Binding IsProcessing}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="⚙️" FontSize="16" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                            <TextBlock Text="{Binding StatusMessage}" 
-                                      FontSize="14" VerticalAlignment="Center" 
-                                      FontWeight="Bold" Foreground="DarkOrange"/>
+                           Background="#D5EDDA" 
+                           CornerRadius="6" 
+                           Padding="12" 
+                           Margin="0,15,0,0"
+                           IsVisible="False">
+                        <StackPanel>
+                            <TextBlock Text="✅ Document Ready" FontSize="12" FontWeight="Medium" Foreground="#155724"/>
+                            <TextBlock Text="TNB-Bill-2024.pdf" FontSize="11" Foreground="#155724"/>
                         </StackPanel>
                     </Border>
                 </Grid>
             </Border>
             
-            <!-- Learning Analytics & Progress Panel -->
-            <Border Grid.Column="1" Background="White" BorderBrush="LightGray" BorderThickness="1" 
-                    CornerRadius="8" Padding="15">
+            <!-- Step 2: Template Selection -->
+            <Border Grid.Column="2" Background="White" BorderBrush="#E8E8E8" BorderThickness="1" 
+                    CornerRadius="12" Padding="25" 
+                    BoxShadow="0 2 8 0 #00000015">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     
-                    <!-- Analytics Header -->
-                    <TextBlock Grid.Row="0" Text="📊 Learning Analytics" 
-                              FontSize="16" FontWeight="Bold" 
-                              Margin="0,0,0,15" HorizontalAlignment="Center"/>
+                    <!-- Step Number -->
+                    <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,0,0,20">
+                        <Border Background="#9B59B6" CornerRadius="20" Width="40" Height="40">
+                            <TextBlock Text="2" FontSize="18" FontWeight="Bold" 
+                                      Foreground="White" HorizontalAlignment="Center" 
+                                      VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="Select Template" 
+                                  FontSize="16" FontWeight="Medium" 
+                                  Foreground="#2C3E50" HorizontalAlignment="Center" 
+                                  Margin="0,8,0,0"/>
+                    </StackPanel>
                     
-                    <!-- Quick Stats -->
-                    <Grid Grid.Row="1" Margin="0,0,0,15">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        
-                        <!-- Documents Processed -->
-                        <Border Grid.Row="0" Background="LightBlue" CornerRadius="5" Padding="10" Margin="0,0,0,5">
-                            <StackPanel>
-                                <TextBlock Text="📄" FontSize="20" HorizontalAlignment="Center"/>
-                                <TextBlock Text="0" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center"/>
-                                <TextBlock Text="Documents Trained" FontSize="10" HorizontalAlignment="Center"/>
-                            </StackPanel>
-                        </Border>
-                        
-                        <!-- Patterns Learned -->
-                        <Border Grid.Row="1" Background="LightGreen" CornerRadius="5" Padding="10" Margin="0,0,0,5">
-                            <StackPanel>
-                                <TextBlock Text="🧠" FontSize="20" HorizontalAlignment="Center"/>
-                                <TextBlock Text="0" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center"/>
-                                <TextBlock Text="Patterns Learned" FontSize="10" HorizontalAlignment="Center"/>
-                            </StackPanel>
-                        </Border>
-                        
-                        <!-- Accuracy Rate -->
-                        <Border Grid.Row="2" Background="LightCyan" CornerRadius="5" Padding="10">
-                            <StackPanel>
-                                <TextBlock Text="🎯" FontSize="20" HorizontalAlignment="Center"/>
-                                <TextBlock Text="0%" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center"/>
-                                <TextBlock Text="Accuracy Rate" FontSize="10" HorizontalAlignment="Center"/>
-                            </StackPanel>
-                        </Border>
-                    </Grid>
-                    
-                    <!-- Document Type Categories -->
-                    <Border Grid.Row="2" Background="WhiteSmoke" BorderBrush="LightGray" 
-                           BorderThickness="1" CornerRadius="5" Padding="10">
-                        <StackPanel>
-                            <TextBlock Text="📁 Document Categories" FontSize="14" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <!-- Template Selection -->
+                    <ScrollViewer Grid.Row="1">
+                        <StackPanel Spacing="12">
+                            <!-- AI Suggestions -->
+                            <Border Background="#EBF3FD" CornerRadius="8" Padding="15">
+                                <StackPanel>
+                                    <TextBlock Text="💡 Smart Suggestions" FontSize="13" FontWeight="Medium" 
+                                              Foreground="#2C3E50" Margin="0,0,0,10"/>
+                                    
+                                    <Button Content="Monthly Utility Report" 
+                                           Background="#3498DB" Foreground="White"
+                                           Padding="12,8" FontSize="12" FontWeight="Medium"
+                                           HorizontalAlignment="Stretch" Margin="0,0,0,6"
+                                           CornerRadius="6" BorderThickness="0"/>
+                                    
+                                    <Button Content="Quarterly Summary" 
+                                           Background="#27AE60" Foreground="White"
+                                           Padding="12,8" FontSize="12" FontWeight="Medium"
+                                           HorizontalAlignment="Stretch" CornerRadius="6" BorderThickness="0"/>
+                                </StackPanel>
+                            </Border>
                             
-                            <!-- Category List -->
-                            <StackPanel Spacing="5">
-                                <Border Background="White" CornerRadius="3" Padding="8" BorderBrush="LightGray" BorderThickness="1">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="⚡" FontSize="14" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="1" Text="Utility Bills" FontSize="12" VerticalAlignment="Center" Margin="8,0"/>
-                                        <TextBlock Grid.Column="2" Text="0" FontSize="12" VerticalAlignment="Center" FontWeight="Bold" Foreground="Blue"/>
-                                    </Grid>
-                                </Border>
-                                
-                                <Border Background="White" CornerRadius="3" Padding="8" BorderBrush="LightGray" BorderThickness="1">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="🧾" FontSize="14" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="1" Text="Invoices" FontSize="12" VerticalAlignment="Center" Margin="8,0"/>
-                                        <TextBlock Grid.Column="2" Text="0" FontSize="12" VerticalAlignment="Center" FontWeight="Bold" Foreground="Blue"/>
-                                    </Grid>
-                                </Border>
-                                
-                                <Border Background="White" CornerRadius="3" Padding="8" BorderBrush="LightGray" BorderThickness="1">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="🏥" FontSize="14" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="1" Text="Medical" FontSize="12" VerticalAlignment="Center" Margin="8,0"/>
-                                        <TextBlock Grid.Column="2" Text="0" FontSize="12" VerticalAlignment="Center" FontWeight="Bold" Foreground="Blue"/>
-                                    </Grid>
-                                </Border>
-                            </StackPanel>
+                            <!-- Template Library -->
+                            <Border Background="#F8F9FA" CornerRadius="8" Padding="15">
+                                <StackPanel>
+                                    <TextBlock Text="📁 My Templates" FontSize="13" FontWeight="Medium" 
+                                              Foreground="#2C3E50" Margin="0,0,0,10"/>
+                                    
+                                    <ComboBox PlaceholderText="Choose existing template..."
+                                             FontSize="12" Padding="10"
+                                             HorizontalAlignment="Stretch" Margin="0,0,0,10"
+                                             CornerRadius="6"/>
+                                    
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="• Database.xlsx" FontSize="11" Foreground="#7F8C8D"/>
+                                        <TextBlock Text="• TNB Monthly Report" FontSize="11" Foreground="#7F8C8D"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
                         </StackPanel>
-                    </Border>
+                    </ScrollViewer>
                     
-                    <!-- Quick Actions -->
-                    <StackPanel Grid.Row="3" Margin="0,15,0,0" Spacing="8">
-                        <Button Content="📈 View Learning Progress" 
-                               Background="Green" Foreground="White"
-                               Padding="10,8" FontSize="12"
-                               HorizontalAlignment="Stretch"/>
+                    <!-- Create New Template -->
+                    <Button Grid.Row="2" Content="Create New Template" 
+                           Command="{Binding UploadTemplateCommand}"
+                           Background="#E67E22" Foreground="White"
+                           Padding="15,10" FontSize="13" FontWeight="Medium"
+                           HorizontalAlignment="Stretch" CornerRadius="6" BorderThickness="0"
+                           Margin="0,15,0,0"/>
+                </Grid>
+            </Border>
+            
+            <!-- Step 3: Processing & Results -->
+            <Border Grid.Column="4" Background="White" BorderBrush="#E8E8E8" BorderThickness="1" 
+                    CornerRadius="12" Padding="25" 
+                    BoxShadow="0 2 8 0 #00000015">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- Step Number -->
+                    <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,0,0,20">
+                        <Border Background="#27AE60" CornerRadius="20" Width="40" Height="40">
+                            <TextBlock Text="3" FontSize="18" FontWeight="Bold" 
+                                      Foreground="White" HorizontalAlignment="Center" 
+                                      VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="Process Results" 
+                                  FontSize="16" FontWeight="Medium" 
+                                  Foreground="#2C3E50" HorizontalAlignment="Center" 
+                                  Margin="0,8,0,0"/>
+                    </StackPanel>
+                    
+                    <!-- Processing Area -->
+                    <ScrollViewer Grid.Row="1">
+                        <StackPanel Spacing="12">
+                            <!-- Processing Status -->
+                            <Border Background="#FFF9E7" CornerRadius="8" Padding="15">
+                                <StackPanel>
+                                    <TextBlock Text="⚙️ Processing Status" FontSize="13" FontWeight="Medium" 
+                                              Foreground="#2C3E50" Margin="0,0,0,10"/>
+                                    
+                                    <StackPanel Spacing="6">
+                                        <Border Background="#D5EDDA" CornerRadius="4" Padding="8">
+                                            <TextBlock Text="✅ Document uploaded" FontSize="11" FontWeight="Medium" Foreground="#155724"/>
+                                        </Border>
+                                        
+                                        <Border Background="#CCE7FF" CornerRadius="4" Padding="8">
+                                            <TextBlock Text="🔄 Extracting data..." FontSize="11" FontWeight="Medium" Foreground="#004085"/>
+                                        </Border>
+                                        
+                                        <Border Background="#F8F9FA" CornerRadius="4" Padding="8">
+                                            <TextBlock Text="⏳ Filling template..." FontSize="11" FontWeight="Medium" Foreground="#6C757D"/>
+                                        </Border>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                            
+                            <!-- Extracted Data -->
+                            <Border Background="#F8F9FA" CornerRadius="8" Padding="15">
+                                <StackPanel>
+                                    <TextBlock Text="📊 Extracted Data" FontSize="13" FontWeight="Medium" 
+                                              Foreground="#2C3E50" Margin="0,0,0,10"/>
+                                    
+                                    <StackPanel Spacing="6">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Total:" FontSize="11" FontWeight="Medium" Foreground="#7F8C8D"/>
+                                            <TextBlock Grid.Column="1" Text="RM 245.67" FontSize="11" Foreground="#2C3E50" Margin="8,0,0,0"/>
+                                        </Grid>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Invoice:" FontSize="11" FontWeight="Medium" Foreground="#7F8C8D"/>
+                                            <TextBlock Grid.Column="1" Text="TNB-2024-001" FontSize="11" Foreground="#2C3E50" Margin="8,0,0,0"/>
+                                        </Grid>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Date:" FontSize="11" FontWeight="Medium" Foreground="#7F8C8D"/>
+                                            <TextBlock Grid.Column="1" Text="2024-07-05" FontSize="11" Foreground="#2C3E50" Margin="8,0,0,0"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                    
+                    <!-- Action Buttons -->
+                    <StackPanel Grid.Row="2" Spacing="10" Margin="0,15,0,0">
+                        <Button Content="Process Document" 
+                               Background="#27AE60" Foreground="White"
+                               Padding="15,12" FontSize="13" FontWeight="Medium"
+                               HorizontalAlignment="Stretch" CornerRadius="6" BorderThickness="0"/>
                         
-                        <Button Content="🔧 Manage Patterns" 
-                               Background="Orange" Foreground="White"
-                               Padding="10,8" FontSize="12"
-                               HorizontalAlignment="Stretch"/>
-                        
-                        <Button Content="💾 Export Training Data" 
-                               Background="Purple" Foreground="White"
-                               Padding="10,8" FontSize="12"
-                               HorizontalAlignment="Stretch"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <Button Grid.Column="0" Content="Preview" 
+                                   Background="#3498DB" Foreground="White"
+                                   Padding="10,8" FontSize="12" FontWeight="Medium"
+                                   CornerRadius="6" BorderThickness="0"/>
+                            
+                            <Button Grid.Column="2" Content="Download" 
+                                   Background="#9B59B6" Foreground="White"
+                                   Padding="10,8" FontSize="12" FontWeight="Medium"
+                                   CornerRadius="6" BorderThickness="0"/>
+                        </Grid>
                     </StackPanel>
                 </Grid>
             </Border>
         </Grid>
         
-        <!-- Teaching Workflow Steps -->
-        <Border Grid.Row="2" Background="LightBlue" CornerRadius="0,0,10,10" Padding="15" Margin="0,10,0,0">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                
-                <!-- Step 1 -->
-                <StackPanel Grid.Column="0" HorizontalAlignment="Center">
-                    <TextBlock Text="1️⃣" FontSize="20" HorizontalAlignment="Center"/>
-                    <TextBlock Text="Upload Document" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center"/>
-                    <TextBlock Text="PDF, Image, or scan" FontSize="10" HorizontalAlignment="Center" Foreground="DarkBlue"/>
-                </StackPanel>
-                
-                <!-- Step 2 -->
-                <StackPanel Grid.Column="1" HorizontalAlignment="Center">
-                    <TextBlock Text="2️⃣" FontSize="20" HorizontalAlignment="Center"/>
-                    <TextBlock Text="AI Processing" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center"/>
-                    <TextBlock Text="OCR + pattern detection" FontSize="10" HorizontalAlignment="Center" Foreground="DarkBlue"/>
-                </StackPanel>
-                
-                <!-- Step 3 -->
-                <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                    <TextBlock Text="3️⃣" FontSize="20" HorizontalAlignment="Center"/>
-                    <TextBlock Text="Review &amp; Teach" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center"/>
-                    <TextBlock Text="Correct extraction errors" FontSize="10" HorizontalAlignment="Center" Foreground="DarkBlue"/>
-                </StackPanel>
-                
-                <!-- Step 4 -->
-                <StackPanel Grid.Column="3" HorizontalAlignment="Center">
-                    <TextBlock Text="4️⃣" FontSize="20" HorizontalAlignment="Center"/>
-                    <TextBlock Text="Pattern Learning" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center"/>
-                    <TextBlock Text="AI improves accuracy" FontSize="10" HorizontalAlignment="Center" Foreground="DarkBlue"/>
-                </StackPanel>
-            </Grid>
-        </Border>
     </Grid>
 
 </UserControl>
