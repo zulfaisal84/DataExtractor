@@ -25,6 +25,7 @@ public partial class TemplateMappingViewModel : ViewModelBase
 {
     private readonly DocumentExtractionContext _context;
     private readonly ExcelDataService _excelDataService;
+    private readonly HtmlTemplateService _htmlTemplateService;
 
     [ObservableProperty]
     private string _statusMessage = "Ready for template mapping";
@@ -63,6 +64,7 @@ public partial class TemplateMappingViewModel : ViewModelBase
     private ExcelGridData? _excelGridData;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasExcelData))]
     private ObservableCollection<ExcelRowData> _excelRows = new();
 
     [ObservableProperty]
@@ -76,6 +78,9 @@ public partial class TemplateMappingViewModel : ViewModelBase
 
     [ObservableProperty]
     private int _selectedColumn = -1;
+
+    [ObservableProperty]
+    private string _htmlPreviewContent = "";
 
     /// <summary>
     /// Whether Excel data is available for display
@@ -107,6 +112,7 @@ public partial class TemplateMappingViewModel : ViewModelBase
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _excelDataService = new ExcelDataService();
+        _htmlTemplateService = new HtmlTemplateService();
         Console.WriteLine("🗺️ TemplateMappingViewModel initialized with Excel data service");
     }
 
@@ -285,8 +291,18 @@ public partial class TemplateMappingViewModel : ViewModelBase
             
             ExcelGridData = await _excelDataService.ReadExcelFileAsync(filePath);
             ExcelData = ExcelGridData.DataTable;
-            ExcelRows = ExcelGridData.ExcelRows;
+            
+            // Clear and repopulate ExcelRows instead of replacing the collection
+            ExcelRows.Clear();
+            foreach (var row in ExcelGridData.ExcelRows)
+            {
+                ExcelRows.Add(row);
+            }
+            
             ExcelColumns = ExcelGridData.ColumnNames;
+            
+            // Generate HTML preview
+            HtmlPreviewContent = _htmlTemplateService.GenerateHtmlPreview(ExcelGridData, FieldMappings.ToList());
             
             // Notify property changes
             OnPropertyChanged(nameof(HasExcelData));
@@ -296,6 +312,7 @@ public partial class TemplateMappingViewModel : ViewModelBase
             Console.WriteLine($"🔍 HasExcelData: {HasExcelData}");
             Console.WriteLine($"🔍 ExcelRows count: {ExcelRows.Count}");
             Console.WriteLine($"🔍 ExcelColumns: {string.Join(", ", ExcelColumns)}");
+            Console.WriteLine($"🌐 HTML preview generated ({HtmlPreviewContent.Length} characters)");
         }
         catch (Exception ex)
         {
@@ -348,9 +365,37 @@ public partial class TemplateMappingViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Handle DataGrid cell selection for Excel mapping
+    /// Handle HTML cell click from WebView JavaScript
     /// </summary>
-    public void HandleCellSelection(int row, int column)
+    public async Task HandleHtmlCellClick(int row, int column, string cellReference, string cellValue)
+    {
+        if (!IsMappingMode || ExcelGridData == null) return;
+
+        try
+        {
+            SelectedRow = row;
+            SelectedColumn = column;
+            SelectedCellReference = cellReference;
+            
+            StatusMessage = $"Selected cell {cellReference}" + 
+                          (string.IsNullOrEmpty(cellValue) ? "" : $" ('{cellValue}')");
+            
+            Console.WriteLine($"🎯 HTML Cell selected: {cellReference} at grid position ({row}, {column})");
+            
+            // Show field mapping dialog
+            await ShowFieldMappingDialog(cellReference, cellValue, row, column);
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error handling HTML cell click: {ex.Message}";
+            Console.WriteLine($"❌ Error in HandleHtmlCellClick: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Handle DataGrid cell selection for Excel mapping (legacy support)
+    /// </summary>
+    public async void HandleCellSelection(int row, int column)
     {
         if (!IsMappingMode || ExcelGridData == null) return;
 
@@ -374,11 +419,166 @@ public partial class TemplateMappingViewModel : ViewModelBase
                           (string.IsNullOrEmpty(cellValue) ? "" : $" ('{cellValue}')");
             
             Console.WriteLine($"🎯 Cell selected: {SelectedCellReference} at grid position ({row}, {column})");
+            
+            // Show field mapping dialog
+            await ShowFieldMappingDialog(SelectedCellReference, cellValue, row, column);
         }
         catch (Exception ex)
         {
             StatusMessage = $"Error selecting cell: {ex.Message}";
             Console.WriteLine($"❌ Error in HandleCellSelection: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Show field mapping dialog for the selected cell
+    /// </summary>
+    private async Task ShowFieldMappingDialog(string cellReference, string cellValue, int row, int column)
+    {
+        try
+        {
+            if (CurrentTemplate == null) return;
+
+            // Check if there's an existing mapping for this cell
+            var existingMapping = FieldMappings.FirstOrDefault(m => m.TargetLocation == cellReference);
+            
+            // Create dialog view model
+            var dialogViewModel = new FieldMappingDialogViewModel();
+            
+            if (existingMapping != null)
+            {
+                dialogViewModel.InitializeWithExistingMapping(cellReference, cellValue, row, column, existingMapping.FieldName);
+            }
+            else
+            {
+                dialogViewModel.Initialize(cellReference, cellValue, row, column);
+            }
+
+            // Show dialog
+            var dialog = new Views.FieldMappingDialog
+            {
+                DataContext = dialogViewModel
+            };
+
+            // Get the main window to set as parent
+            if (Avalonia.Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                var result = await dialog.ShowDialog<Views.FieldMappingResult?>(desktop.MainWindow);
+                
+                if (result?.IsSuccess == true)
+                {
+                    if (result.IsClearOperation)
+                    {
+                        await ClearFieldMapping(cellReference);
+                    }
+                    else
+                    {
+                        await SaveFieldMapping(cellReference, result.FieldName, result.IsCustomField);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error showing field mapping dialog: {ex.Message}";
+            Console.WriteLine($"❌ Error in ShowFieldMappingDialog: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Save field mapping to database
+    /// </summary>
+    private async Task SaveFieldMapping(string cellReference, string fieldName, bool isCustomField)
+    {
+        try
+        {
+            if (CurrentTemplate == null) return;
+
+            // Check if mapping already exists
+            var existingMapping = await _context.TemplateFieldMappings
+                .FirstOrDefaultAsync(m => m.TemplateId == CurrentTemplate.Id && m.TargetLocation == cellReference);
+
+            if (existingMapping != null)
+            {
+                // Update existing mapping
+                existingMapping.FieldName = fieldName;
+                existingMapping.Description = isCustomField ? "Custom field" : "Predefined field";
+                existingMapping.FormatInstructions = "";
+                
+                Console.WriteLine($"📝 Updated field mapping: {cellReference} → {fieldName}");
+            }
+            else
+            {
+                // Create new mapping
+                var newMapping = new TemplateFieldMapping
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    TemplateId = CurrentTemplate.Id,
+                    FieldName = fieldName,
+                    TargetLocation = cellReference,
+                    LocationType = "ExcelCell",
+                    Description = isCustomField ? "Custom field" : "Predefined field",
+                    FormatInstructions = "",
+                    IsRequired = false,
+                    DisplayOrder = FieldMappings.Count + 1,
+                    CreatedDate = DateTime.UtcNow
+                };
+
+                _context.TemplateFieldMappings.Add(newMapping);
+                FieldMappings.Add(newMapping);
+                
+                Console.WriteLine($"➕ Created field mapping: {cellReference} → {fieldName}");
+            }
+
+            await _context.SaveChangesAsync();
+            
+            StatusMessage = $"Field mapping saved: {fieldName} → {cellReference}";
+            
+            // Refresh mappings display
+            await LoadFieldMappings();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error saving field mapping: {ex.Message}";
+            Console.WriteLine($"❌ Error in SaveFieldMapping: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Clear field mapping from database
+    /// </summary>
+    private async Task ClearFieldMapping(string cellReference)
+    {
+        try
+        {
+            if (CurrentTemplate == null) return;
+
+            var mapping = await _context.TemplateFieldMappings
+                .FirstOrDefaultAsync(m => m.TemplateId == CurrentTemplate.Id && m.TargetLocation == cellReference);
+
+            if (mapping != null)
+            {
+                _context.TemplateFieldMappings.Remove(mapping);
+                await _context.SaveChangesAsync();
+                
+                // Remove from local collection
+                var localMapping = FieldMappings.FirstOrDefault(m => m.TargetLocation == cellReference);
+                if (localMapping != null)
+                {
+                    FieldMappings.Remove(localMapping);
+                }
+                
+                StatusMessage = $"Field mapping cleared for {cellReference}";
+                Console.WriteLine($"🗑️ Cleared field mapping for {cellReference}");
+                
+                // Refresh mappings display
+                await LoadFieldMappings();
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error clearing field mapping: {ex.Message}";
+            Console.WriteLine($"❌ Error in ClearFieldMapping: {ex.Message}");
         }
     }
 
@@ -400,6 +600,34 @@ public partial class TemplateMappingViewModel : ViewModelBase
         {
             StatusMessage = $"Error handling template click: {ex.Message}";
             Console.WriteLine($"❌ Error in HandleTemplateClick: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Load field mappings for the current template
+    /// </summary>
+    private async Task LoadFieldMappings()
+    {
+        try
+        {
+            if (CurrentTemplate == null) return;
+
+            var mappings = await _context.TemplateFieldMappings
+                .Where(m => m.TemplateId == CurrentTemplate.Id)
+                .OrderBy(m => m.CreatedDate)
+                .ToListAsync();
+
+            FieldMappings.Clear();
+            foreach (var mapping in mappings)
+            {
+                FieldMappings.Add(mapping);
+            }
+
+            Console.WriteLine($"📊 Loaded {mappings.Count} existing field mappings");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error loading field mappings: {ex.Message}");
         }
     }
 

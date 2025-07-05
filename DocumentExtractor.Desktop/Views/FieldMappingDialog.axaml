@@ -1,0 +1,145 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:DocumentExtractor.Desktop.ViewModels"
+        x:Class="DocumentExtractor.Desktop.Views.FieldMappingDialog"
+        x:DataType="vm:FieldMappingDialogViewModel"
+        Title="Map Template Field"
+        Width="500" Height="400"
+        MinWidth="450" MinHeight="350"
+        WindowStartupLocation="CenterOwner"
+        CanResize="True"
+        Background="White">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,20">
+            <TextBlock Text="🗺️ Map Template Field" 
+                      FontSize="20" FontWeight="Bold" 
+                      Foreground="#2C3E50" Margin="0,0,0,8"/>
+            <TextBlock Text="Connect a document field to this template location" 
+                      FontSize="14" Foreground="#7F8C8D"/>
+        </StackPanel>
+
+        <!-- Cell Information -->
+        <Border Grid.Row="1" Background="#F8F9FA" CornerRadius="8" Padding="15" Margin="0,0,0,20">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="📍 Cell Reference:" 
+                          FontSize="13" FontWeight="Medium" Foreground="#2C3E50" 
+                          VerticalAlignment="Center" Margin="0,0,10,5"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding CellReference}" 
+                          FontSize="13" FontWeight="Bold" Foreground="#3498DB" 
+                          VerticalAlignment="Center" Margin="0,0,0,5"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="📄 Current Value:" 
+                          FontSize="13" FontWeight="Medium" Foreground="#2C3E50" 
+                          VerticalAlignment="Center" Margin="0,0,10,5"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding CellValue}" 
+                          FontSize="13" Foreground="#2C3E50" 
+                          VerticalAlignment="Center" Margin="0,0,0,5"
+                          TextWrapping="Wrap"/>
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="📊 Position:" 
+                          FontSize="13" FontWeight="Medium" Foreground="#2C3E50" 
+                          VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding GridPosition}" 
+                          FontSize="13" Foreground="#7F8C8D" 
+                          VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <!-- Field Selection -->
+        <StackPanel Grid.Row="2" Spacing="15">
+            <TextBlock Text="📋 Select Document Field" 
+                      FontSize="16" FontWeight="Medium" 
+                      Foreground="#2C3E50"/>
+
+            <!-- Predefined Fields -->
+            <Border Background="White" BorderBrush="#E8E8E8" BorderThickness="1" 
+                    CornerRadius="8" Padding="15">
+                <StackPanel>
+                    <TextBlock Text="💡 Common Fields" 
+                              FontSize="14" FontWeight="Medium" 
+                              Foreground="#2C3E50" Margin="0,0,0,10"/>
+                    
+                    <ComboBox Name="FieldTypeComboBox"
+                             ItemsSource="{Binding AvailableFieldTypes}"
+                             SelectedItem="{Binding SelectedFieldType}"
+                             PlaceholderText="Choose a field type..."
+                             FontSize="13" Padding="10"
+                             HorizontalAlignment="Stretch"
+                             CornerRadius="6"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Custom Field -->
+            <Border Background="White" BorderBrush="#E8E8E8" BorderThickness="1" 
+                    CornerRadius="8" Padding="15">
+                <StackPanel>
+                    <TextBlock Text="✏️ Custom Field" 
+                              FontSize="14" FontWeight="Medium" 
+                              Foreground="#2C3E50" Margin="0,0,0,10"/>
+                    
+                    <TextBox Name="CustomFieldTextBox"
+                            Text="{Binding CustomFieldName}"
+                            Watermark="Enter custom field name..."
+                            FontSize="13" Padding="10"
+                            CornerRadius="6"/>
+                    
+                    <TextBlock Text="Use this for fields not in the list above" 
+                              FontSize="11" Foreground="#7F8C8D" 
+                              Margin="0,5,0,0"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <!-- Action Buttons -->
+        <Grid Grid.Row="4" Margin="0,20,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="0" Content="❌ Clear Mapping" 
+                   Name="ClearButton"
+                   Background="#E74C3C" Foreground="White"
+                   Padding="12,8" FontSize="13" FontWeight="Medium"
+                   CornerRadius="6" BorderThickness="0"
+                   IsEnabled="{Binding HasExistingMapping}"/>
+
+            <Button Grid.Column="2" Content="💾 Save Mapping" 
+                   Name="SaveButton"
+                   Background="#27AE60" Foreground="White"
+                   Padding="12,8" FontSize="13" FontWeight="Medium"
+                   CornerRadius="6" BorderThickness="0"
+                   IsEnabled="{Binding CanSaveMapping}"/>
+
+            <Button Grid.Column="4" Content="✖️ Cancel" 
+                   Name="CancelButton"
+                   Background="#95A5A6" Foreground="White"
+                   Padding="12,8" FontSize="13" FontWeight="Medium"
+                   CornerRadius="6" BorderThickness="0"/>
+        </Grid>
+    </Grid>
+
+</Window>
