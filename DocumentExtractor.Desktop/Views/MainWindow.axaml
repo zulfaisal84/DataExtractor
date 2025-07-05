@@ -24,9 +24,13 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
         
         <!-- Header -->
-        <Border Grid.Row="0" Background="DarkBlue" CornerRadius="10,10,0,0" Padding="20" Margin="0,0,0,10">
+        <Border Grid.Row="0" Grid.ColumnSpan="2" Background="DarkBlue" CornerRadius="10,10,0,0" Padding="20" Margin="0,0,0,10">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -49,7 +53,8 @@
         </Border>
         
         <!-- Main Content with Tabs -->
-        <TabControl Grid.Row="1" Background="White" BorderBrush="DarkBlue" BorderThickness="2">
+        <TabControl Grid.Row="1" Grid.Column="0" Background="White" BorderBrush="DarkBlue" BorderThickness="2" 
+                   SelectionChanged="OnTabSelectionChanged" Name="MainTabControl">
             
             <!-- AI Learning Tab -->
             <TabItem Header="🤖 AI Learning" FontSize="14" FontWeight="Bold">
@@ -282,8 +287,11 @@
             </TabItem>
         </TabControl>
         
+        <!-- AI Assistant Panel -->
+        <views:AIAssistantPanel Grid.Row="1" Grid.Column="1" DataContext="{Binding GlobalAI}"/>
+        
         <!-- Footer Status Bar -->
-        <Border Grid.Row="2" Background="DarkGray" CornerRadius="0,0,10,10" Padding="15">
+        <Border Grid.Row="2" Grid.ColumnSpan="2" Background="DarkGray" CornerRadius="0,0,10,10" Padding="15">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>

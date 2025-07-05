@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DocumentExtractor.Core.Models;
 using DocumentExtractor.Data.Context;
+using DocumentExtractor.Desktop.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace DocumentExtractor.Desktop.ViewModels;
@@ -62,6 +63,11 @@ public partial class MainWindowViewModel : ViewModelBase
     /// Template mapping view model for visual field mapping
     /// </summary>
     public TemplateMappingViewModel TemplateMappingViewModel { get; }
+
+    /// <summary>
+    /// Global AI Assistant service for context-aware help across all tabs
+    /// </summary>
+    public GlobalAIAssistantService GlobalAI { get; }
 
     #endregion
 
@@ -185,6 +191,7 @@ public partial class MainWindowViewModel : ViewModelBase
         RecentActivity = $"🏠 Returned to welcome screen at {DateTime.Now:HH:mm:ss}";
     }
 
+
     #endregion
 
     #region Constructor and Initialization
@@ -207,6 +214,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
             // Initialize database context safely
             _context = new DocumentExtractionContext();
+            
+            // Initialize Global AI Assistant Service
+            GlobalAI = new GlobalAIAssistantService(_context);
             
             // Initialize Template Mapping ViewModel
             TemplateMappingViewModel = new TemplateMappingViewModel(_context);
@@ -240,6 +250,9 @@ public partial class MainWindowViewModel : ViewModelBase
             StatusMessage = "Application ready";
             DatabaseStatus = "🔗 Connected";
             RecentActivity = "Application started successfully";
+            
+            // Initialize Global AI Assistant with welcome message
+            GlobalAI.InitializeWelcomeMessage();
         }
         catch (Exception ex)
         {
@@ -343,6 +356,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _statusTimer?.Stop();
         _statusTimer?.Dispose();
         _context?.Dispose();
+        // Note: GlobalAI service will be disposed by DI container
         base.Dispose();
     }
 
