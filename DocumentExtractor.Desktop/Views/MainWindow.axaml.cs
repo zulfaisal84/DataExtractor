@@ -64,7 +64,7 @@ public partial class MainWindow : Window
             // Extract context name from tab header
             var context = tabHeader switch
             {
-                "🤖 AI Learning" => "AI Learning",
+                "🎓 Document Teaching" => "Document Teaching",
                 "🗺️ Template Mapping" => "Template Mapping", 
                 "📊 Dashboard" => "Dashboard",
                 "📋 Documents" => "Documents",

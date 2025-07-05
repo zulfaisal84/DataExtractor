@@ -56,9 +56,9 @@
         <TabControl Grid.Row="1" Grid.Column="0" Background="White" BorderBrush="DarkBlue" BorderThickness="2" 
                    SelectionChanged="OnTabSelectionChanged" Name="MainTabControl">
             
-            <!-- AI Learning Tab -->
-            <TabItem Header="🤖 AI Learning" FontSize="14" FontWeight="Bold">
-                <views:ConversationalLearningView Margin="10"/>
+            <!-- Document Teaching Tab -->
+            <TabItem Header="🎓 Document Teaching" FontSize="14" FontWeight="Bold">
+                <views:DocumentTeachingView DataContext="{Binding ConversationalLearningViewModel}"/>
             </TabItem>
             
             <!-- Template Mapping Tab -->

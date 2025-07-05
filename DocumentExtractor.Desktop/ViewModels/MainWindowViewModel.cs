@@ -69,6 +69,11 @@ public partial class MainWindowViewModel : ViewModelBase
     /// </summary>
     public GlobalAIAssistantService GlobalAI { get; }
 
+    /// <summary>
+    /// Conversational learning view model for document teaching functionality
+    /// </summary>
+    public ConversationalLearningViewModel ConversationalLearningViewModel { get; }
+
     #endregion
 
     #region Commands
@@ -220,6 +225,9 @@ public partial class MainWindowViewModel : ViewModelBase
             
             // Initialize Template Mapping ViewModel
             TemplateMappingViewModel = new TemplateMappingViewModel(_context);
+            
+            // Initialize Conversational Learning ViewModel for Document Teaching
+            ConversationalLearningViewModel = new ConversationalLearningViewModel();
             
             // Initialize the application asynchronously
             _ = InitializeAsync();

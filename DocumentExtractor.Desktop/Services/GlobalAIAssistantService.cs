@@ -273,6 +273,29 @@ public partial class GlobalAIAssistantService : ObservableObject
 
         switch (context.ToLower())
         {
+            case "document teaching":
+                if (lowerMessage.Contains("help") || lowerMessage.Contains("how"))
+                {
+                    return "🎓 **Document Teaching Hub Help**\n\n" +
+                           "This is your AI training workspace! Here's how to use it:\n\n" +
+                           "1️⃣ **Upload Documents**: Drag and drop documents for AI training\n" +
+                           "2️⃣ **Choose Document Type**: Categorize (Bills, Invoices, Medical, etc.)\n" +
+                           "3️⃣ **Review Extraction**: Check what I extracted and teach corrections\n" +
+                           "4️⃣ **Train Patterns**: I learn from your feedback and improve\n\n" +
+                           "💡 **Pro tip**: Upload multiple examples of the same document type for better learning!";
+                }
+                if (lowerMessage.Contains("upload") || lowerMessage.Contains("document"))
+                {
+                    return "📄 **Document Upload Training**\n\n" +
+                           "I can learn from these document types:\n\n" +
+                           "• **Utility Bills**: TNB, electricity, water, gas bills\n" +
+                           "• **Invoices**: Business invoices, purchase orders\n" +
+                           "• **Medical Reports**: Prescriptions, lab results, doctor notes\n" +
+                           "• **Financial Documents**: Statements, receipts, tax forms\n\n" +
+                           "**Upload multiple examples** of each type for better pattern learning!";
+                }
+                break;
+
             case "templatemapping":
                 if (lowerMessage.Contains("help") || lowerMessage.Contains("how"))
                 {
@@ -374,7 +397,7 @@ public partial class GlobalAIAssistantService : ObservableObject
         {
             return $"🆘 **Global AI Assistant Help** (Context: {context})\n\n" +
                    "I'm here to help you on ANY tab! Here's what I can do:\n\n" +
-                   "**🤖 AI Learning**: Upload documents, teach me patterns\n" +
+                   "**🎓 Document Teaching**: Upload documents, train me on patterns\n" +
                    "**🗺️ Template Mapping**: Click-to-teach Excel cell mapping\n" +
                    "**📊 Dashboard**: Insights and statistics\n" +
                    "**📋 Documents**: Review processed documents\n" +
@@ -408,8 +431,8 @@ public partial class GlobalAIAssistantService : ObservableObject
             "Templates" => 
                 "📁 **Templates Tab** - Manage your template library and organize by categories!",
             
-            "AI Learning" => 
-                "🤖 **AI Learning Tab** - Upload documents and teach me your document patterns!",
+            "Document Teaching" => 
+                "🎓 **Document Teaching Hub** - Upload documents and train me to read your specific document types!",
             
             _ => string.Empty
         };
