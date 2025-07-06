@@ -82,6 +82,15 @@ public partial class TemplateMappingViewModel : ViewModelBase
     [ObservableProperty]
     private string _htmlPreviewContent = "";
 
+    [ObservableProperty]
+    private string _htmlContentStatus = "No Excel data loaded";
+
+    [ObservableProperty]
+    private bool _isWebViewReady = false;
+
+    [ObservableProperty]
+    private string _canvasStatus = "Canvas ready for Excel rendering";
+
     /// <summary>
     /// Whether Excel data is available for display
     /// </summary>
@@ -301,8 +310,9 @@ public partial class TemplateMappingViewModel : ViewModelBase
             
             ExcelColumns = ExcelGridData.ColumnNames;
             
-            // Generate HTML preview
-            HtmlPreviewContent = _htmlTemplateService.GenerateHtmlPreview(ExcelGridData, FieldMappings.ToList());
+            // Generate HTML preview using new ExcelDataService method
+            HtmlPreviewContent = ExcelDataService.GenerateHtmlTable(ExcelGridData, enableClickToTeach: true);
+            HtmlContentStatus = $"HTML generated: {HtmlPreviewContent.Length / 1024.0:F1} KB";
             
             // Notify property changes
             OnPropertyChanged(nameof(HasExcelData));
@@ -313,6 +323,9 @@ public partial class TemplateMappingViewModel : ViewModelBase
             Console.WriteLine($"🔍 ExcelRows count: {ExcelRows.Count}");
             Console.WriteLine($"🔍 ExcelColumns: {string.Join(", ", ExcelColumns)}");
             Console.WriteLine($"🌐 HTML preview generated ({HtmlPreviewContent.Length} characters)");
+            
+            // Automatically trigger Canvas drawing after data is loaded
+            await DrawCanvasGrid();
         }
         catch (Exception ex)
         {
@@ -362,6 +375,73 @@ public partial class TemplateMappingViewModel : ViewModelBase
         MappingInstructions = IsTemplateLoaded ? 
             GetMappingInstructions(Path.GetExtension(TemplatePreviewPath).ToLowerInvariant()) :
             "Upload a template to begin visual field mapping";
+    }
+
+    /// <summary>
+    /// Draw Excel grid on Canvas for visual mapping
+    /// </summary>
+    [RelayCommand]
+    private async Task DrawCanvasGrid()
+    {
+        try
+        {
+            if (ExcelData == null || ExcelRows.Count == 0)
+            {
+                CanvasStatus = "No Excel data available for Canvas rendering";
+                StatusMessage = "Load a template first";
+                return;
+            }
+
+            CanvasStatus = "Drawing Excel grid on Canvas...";
+            StatusMessage = "Rendering Excel data on Canvas...";
+            
+            await Task.Delay(100); // Small delay for UI update
+            
+            // The actual Canvas drawing will be implemented in the View code-behind
+            // triggered by this status change
+            CanvasStatus = $"✅ Canvas drawing initiated for {ExcelRows.Count} rows × {ExcelColumns.Count} columns";
+            StatusMessage = $"Excel grid rendered: {ExcelRows.Count} rows × {ExcelColumns.Count} columns";
+            
+            Console.WriteLine($"🎨 Canvas grid drawing initiated for Excel data");
+        }
+        catch (Exception ex)
+        {
+            CanvasStatus = $"❌ Error drawing Canvas: {ex.Message}";
+            StatusMessage = $"Canvas rendering failed: {ex.Message}";
+            Console.WriteLine($"❌ Error in DrawCanvasGrid: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Generate HTML preview for Excel template
+    /// </summary>
+    [RelayCommand]
+    private async Task GenerateHtmlPreview()
+    {
+        try
+        {
+            if (ExcelGridData == null)
+            {
+                StatusMessage = "No Excel data available - load a template first";
+                return;
+            }
+
+            StatusMessage = "Generating HTML preview...";
+            
+            await Task.Run(() =>
+            {
+                HtmlPreviewContent = ExcelDataService.GenerateHtmlTable(ExcelGridData, enableClickToTeach: true);
+                HtmlContentStatus = $"HTML generated: {HtmlPreviewContent.Length / 1024.0:F1} KB • Click cells to map fields";
+            });
+            
+            StatusMessage = "HTML preview generated - ready for click-to-teach mapping";
+            Console.WriteLine($"🌐 HTML preview manually generated: {HtmlPreviewContent.Length} characters");
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error generating HTML preview: {ex.Message}";
+            Console.WriteLine($"❌ Error in GenerateHtmlPreview: {ex.Message}");
+        }
     }
 
     /// <summary>

@@ -29,8 +29,8 @@
     <!-- Excel Processing -->
     <PackageReference Include="EPPlus" Version="7.2.2" />
     
-    <!-- WebView Options - commenting out until we find the right package -->
-    <!-- <PackageReference Include="Avalonia.WebView" Version="11.3.2" /> -->
+    <!-- WebView Package - Using WebView.Avalonia for cross-platform support -->
+    <PackageReference Include="WebView.Avalonia" Version="11.0.0.1" />
     
     <!-- Data Handling -->
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
