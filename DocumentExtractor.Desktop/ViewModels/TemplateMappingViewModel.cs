@@ -43,13 +43,13 @@ public partial class TemplateMappingViewModel : ViewModelBase
     private bool _isTemplateLoaded = false;
 
     [ObservableProperty]
-    private string _mappingInstructions = "Upload a template to begin visual field mapping";
+    private string _mappingInstructions = "Load a template to begin click-to-teach field mapping";
 
     [ObservableProperty]
     private double _zoomLevel = 1.0;
 
     [ObservableProperty]
-    private bool _isMappingMode = false;
+    private bool _isMappingMode = true; // Always in mapping mode with simplified workflow
 
     [ObservableProperty]
     private string _currentFieldName = "";
@@ -136,34 +136,7 @@ public partial class TemplateMappingViewModel : ViewModelBase
             IsProcessing = true;
             StatusMessage = "Opening template selection...";
 
-            // First check if Database.xlsx template already exists in database
-            var existingTemplate = await _context.Templates
-                .FirstOrDefaultAsync(t => t.FileName == "Database.xlsx");
-
-            if (existingTemplate != null)
-            {
-                StatusMessage = "Loading existing template from database...";
-                CurrentTemplate = existingTemplate;
-                await LoadExistingMappings();
-                
-                // Set up template preview
-                TemplatePreviewPath = existingTemplate.FilePath;
-                
-                // Load Excel data if it's an Excel file
-                if (existingTemplate.FileExtension == ".xlsx" || existingTemplate.FileExtension == ".xls")
-                {
-                    await LoadExcelData(existingTemplate.FilePath);
-                }
-                
-                IsTemplateLoaded = true;
-                MappingInstructions = GetMappingInstructions(existingTemplate.FileExtension);
-                
-                StatusMessage = $"Loaded existing template: {existingTemplate.FileName}";
-                Console.WriteLine($"📋 Existing template loaded: {existingTemplate.FileName}");
-                return;
-            }
-
-            // If no existing template, open file picker for new template selection
+            // Always open file picker instead of auto-loading existing template
             var files = await OpenFilePickerAsync("Select Template for Visual Mapping", new[] {
                 "Excel files (*.xlsx;*.xls)",
                 "PDF files (*.pdf)",
@@ -251,6 +224,7 @@ public partial class TemplateMappingViewModel : ViewModelBase
             
             IsTemplateLoaded = true;
             MappingInstructions = GetMappingInstructions(extension);
+            IsMappingMode = true; // Enable mapping mode when template is loaded
 
             Console.WriteLine($"📋 Template loaded successfully: {fileName}");
         }
@@ -324,8 +298,6 @@ public partial class TemplateMappingViewModel : ViewModelBase
             Console.WriteLine($"🔍 ExcelColumns: {string.Join(", ", ExcelColumns)}");
             Console.WriteLine($"🌐 HTML preview generated ({HtmlPreviewContent.Length} characters)");
             
-            // Automatically trigger Canvas drawing after data is loaded
-            await DrawCanvasGrid();
         }
         catch (Exception ex)
         {
@@ -345,72 +317,8 @@ public partial class TemplateMappingViewModel : ViewModelBase
         }
     }
 
-    /// <summary>
-    /// Start field mapping mode
-    /// </summary>
-    [RelayCommand]
-    private void StartMapping()
-    {
-        if (!IsTemplateLoaded)
-        {
-            StatusMessage = "Please load a template first";
-            return;
-        }
 
-        IsMappingMode = true;
-        StatusMessage = "Click on template to map fields. Press ESC to exit mapping mode.";
-        MappingInstructions = "🎯 MAPPING MODE ACTIVE\n\n1. Click on any cell/field in the template\n2. Specify what data goes there\n3. I'll remember the mapping for future use";
-    }
 
-    /// <summary>
-    /// Exit field mapping mode
-    /// </summary>
-    [RelayCommand]
-    private void ExitMapping()
-    {
-        IsMappingMode = false;
-        CurrentFieldName = "";
-        CurrentFieldDescription = "";
-        StatusMessage = "Mapping mode disabled";
-        MappingInstructions = IsTemplateLoaded ? 
-            GetMappingInstructions(Path.GetExtension(TemplatePreviewPath).ToLowerInvariant()) :
-            "Upload a template to begin visual field mapping";
-    }
-
-    /// <summary>
-    /// Draw Excel grid on Canvas for visual mapping
-    /// </summary>
-    [RelayCommand]
-    private async Task DrawCanvasGrid()
-    {
-        try
-        {
-            if (ExcelData == null || ExcelRows.Count == 0)
-            {
-                CanvasStatus = "No Excel data available for Canvas rendering";
-                StatusMessage = "Load a template first";
-                return;
-            }
-
-            CanvasStatus = "Drawing Excel grid on Canvas...";
-            StatusMessage = "Rendering Excel data on Canvas...";
-            
-            await Task.Delay(100); // Small delay for UI update
-            
-            // The actual Canvas drawing will be implemented in the View code-behind
-            // triggered by this status change
-            CanvasStatus = $"✅ Canvas drawing initiated for {ExcelRows.Count} rows × {ExcelColumns.Count} columns";
-            StatusMessage = $"Excel grid rendered: {ExcelRows.Count} rows × {ExcelColumns.Count} columns";
-            
-            Console.WriteLine($"🎨 Canvas grid drawing initiated for Excel data");
-        }
-        catch (Exception ex)
-        {
-            CanvasStatus = $"❌ Error drawing Canvas: {ex.Message}";
-            StatusMessage = $"Canvas rendering failed: {ex.Message}";
-            Console.WriteLine($"❌ Error in DrawCanvasGrid: {ex.Message}");
-        }
-    }
 
     /// <summary>
     /// Generate HTML preview for Excel template
@@ -449,7 +357,7 @@ public partial class TemplateMappingViewModel : ViewModelBase
     /// </summary>
     public async Task HandleHtmlCellClick(int row, int column, string cellReference, string cellValue)
     {
-        if (!IsMappingMode || ExcelGridData == null) return;
+        if (ExcelGridData == null) return; // Removed IsMappingMode check - always enabled
 
         try
         {
@@ -477,7 +385,7 @@ public partial class TemplateMappingViewModel : ViewModelBase
     /// </summary>
     public async void HandleCellSelection(int row, int column)
     {
-        if (!IsMappingMode || ExcelGridData == null) return;
+        if (ExcelGridData == null) return; // Removed IsMappingMode check - always enabled
 
         try
         {
@@ -667,7 +575,7 @@ public partial class TemplateMappingViewModel : ViewModelBase
     /// </summary>
     public async Task HandleTemplateClick(double x, double y)
     {
-        if (!IsMappingMode || CurrentTemplate == null) return;
+        if (CurrentTemplate == null) return; // Removed IsMappingMode check - always enabled
 
         try
         {
@@ -806,10 +714,10 @@ public partial class TemplateMappingViewModel : ViewModelBase
     {
         return extension switch
         {
-            ".xlsx" or ".xls" => "📊 EXCEL TEMPLATE\n\n• Click on cells to map data fields\n• Specify cell references (e.g., 'D15', 'B8')\n• Perfect for structured reports and forms",
-            ".pdf" => "📄 PDF TEMPLATE\n\n• Click on form fields or text areas\n• Map to specific field names\n• Works with fillable PDF forms",
-            ".docx" or ".doc" => "📝 WORD TEMPLATE\n\n• Click on tables or bookmarks\n• Map to document sections\n• Good for text-based reports",
-            _ => "📋 TEMPLATE MAPPING\n\n• Click anywhere to define field positions\n• Describe what data belongs there\n• Build smart automation patterns"
+            ".xlsx" or ".xls" => "🎯 CLICK-TO-TEACH EXCEL MAPPING\n\n• Click any cell to teach field mapping\n• Select field type from dropdown menu\n• Mappings saved automatically to database\n• Ready for automated data extraction",
+            ".pdf" => "🎯 CLICK-TO-TEACH PDF MAPPING\n\n• Click on form fields or text areas\n• Teach where each data field belongs\n• Perfect for fillable PDF forms",
+            ".docx" or ".doc" => "🎯 CLICK-TO-TEACH WORD MAPPING\n\n• Click on tables or document sections\n• Map data fields to specific locations\n• Great for structured reports",
+            _ => "🎯 CLICK-TO-TEACH MAPPING\n\n• Click anywhere to define field positions\n• Teach the system where data belongs\n• Build intelligent automation patterns"
         };
     }
 
