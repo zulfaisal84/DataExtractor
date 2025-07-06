@@ -173,18 +173,34 @@
                     <StackPanel Grid.Row="1" Spacing="10" Margin="0,0,0,15">
                         <TextBlock Text="Field Details:" FontWeight="Bold"/>
                         
+                        <!-- Pattern Detection Display -->
+                        <Border Background="LightBlue" BorderBrush="Blue" BorderThickness="1" 
+                               CornerRadius="3" Padding="8" Margin="0,0,0,5">
+                            <StackPanel>
+                                <TextBlock Text="📊 Template Pattern:" FontSize="10" FontWeight="Bold"/>
+                                <TextBlock Text="{Binding DetectedPattern}" FontSize="11" 
+                                          FontWeight="Bold" Foreground="DarkBlue"/>
+                            </StackPanel>
+                        </Border>
+                        
                         <TextBox Watermark="Field name (e.g., 'Total Amount')" 
                                 Text="{Binding CurrentFieldName}"
                                 IsEnabled="{Binding IsMappingMode}"/>
                         
-                        <ComboBox ItemsSource="{Binding AvailableFieldTypes}" 
-                                 SelectedItem="{Binding CurrentFieldName}"
-                                 PlaceholderText="Select field type"
-                                 IsEnabled="{Binding IsMappingMode}"/>
+                        <AutoCompleteBox ItemsSource="{Binding AvailableFieldTypes}" 
+                                        Text="{Binding CurrentFieldType}"
+                                        Watermark="Type or select field type (e.g., Product Image, SKU)"
+                                        IsEnabled="{Binding IsMappingMode}"/>
                         
                         <TextBox Watermark="Description (optional)" 
                                 Text="{Binding CurrentFieldDescription}"
                                 IsEnabled="{Binding IsMappingMode}"/>
+                        
+                        <!-- Save as Rule Option -->
+                        <CheckBox Content="💡 Save as reusable mapping rule" 
+                                 IsChecked="{Binding ShowSaveAsRule}"
+                                 IsEnabled="{Binding IsMappingMode}"
+                                 FontSize="11"/>
                         
                         <Button Content="💾 Save Field Mapping" 
                                Command="{Binding SaveFieldMappingCommand}"

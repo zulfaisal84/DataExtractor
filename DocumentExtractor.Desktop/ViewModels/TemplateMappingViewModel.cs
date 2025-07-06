@@ -55,6 +55,9 @@ public partial class TemplateMappingViewModel : ViewModelBase
     private string _currentFieldName = "";
 
     [ObservableProperty]
+    private string _currentFieldType = "";
+
+    [ObservableProperty]
     private string _currentFieldDescription = "";
 
     [ObservableProperty]
@@ -91,6 +94,12 @@ public partial class TemplateMappingViewModel : ViewModelBase
     [ObservableProperty]
     private string _canvasStatus = "Canvas ready for Excel rendering";
 
+    [ObservableProperty]
+    private string _detectedPattern = "No pattern detected";
+
+    [ObservableProperty]
+    private bool _showSaveAsRule = false;
+
     /// <summary>
     /// Whether Excel data is available for display
     /// </summary>
@@ -104,18 +113,11 @@ public partial class TemplateMappingViewModel : ViewModelBase
     /// <summary>
     /// Collection of available field types for mapping
     /// </summary>
-    public ObservableCollection<string> AvailableFieldTypes { get; } = new()
-    {
-        "Total Amount",
-        "Invoice Number", 
-        "Date",
-        "Company Name",
-        "Account Number",
-        "Due Date",
-        "Tax Amount",
-        "Subtotal",
-        "Custom Field"
-    };
+    /// <summary>
+    /// Dynamic field type suggestions based on usage history and smart suggestions
+    /// </summary>
+    [ObservableProperty]
+    private ObservableCollection<string> _availableFieldTypes = new();
 
     public TemplateMappingViewModel(DocumentExtractionContext context)
     {
@@ -300,6 +302,12 @@ public partial class TemplateMappingViewModel : ViewModelBase
             
             // Trigger Canvas drawing after data is loaded (for Template Preview)
             CanvasStatus = $"✅ Canvas drawing initiated for {ExcelRows.Count} rows × {ExcelColumns.Count} columns";
+            
+            // Load dynamic field type suggestions based on column headers and history
+            await LoadFieldTypeSuggestions();
+            
+            // Detect template pattern
+            DetectedPattern = DetectTemplatePattern();
             
         }
         catch (Exception ex)
@@ -619,6 +627,196 @@ public partial class TemplateMappingViewModel : ViewModelBase
         catch (Exception ex)
         {
             Console.WriteLine($"❌ Error loading field mappings: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Initialize dynamic field type suggestions
+    /// </summary>
+    private async Task LoadFieldTypeSuggestions()
+    {
+        try
+        {
+            // Load previously used field types from database
+            var usedFieldTypes = await _context.TemplateFieldMappings
+                .Where(f => !string.IsNullOrWhiteSpace(f.FieldName))
+                .Select(f => f.FieldName)
+                .Distinct()
+                .OrderBy(f => f)
+                .ToListAsync();
+
+            // Add common suggestions based on current template context
+            var smartSuggestions = GenerateSmartSuggestions();
+            
+            // Combine and deduplicate
+            var allSuggestions = usedFieldTypes
+                .Concat(smartSuggestions)
+                .Distinct()
+                .OrderBy(s => s)
+                .ToList();
+
+            AvailableFieldTypes.Clear();
+            foreach (var suggestion in allSuggestions)
+            {
+                AvailableFieldTypes.Add(suggestion);
+            }
+
+            Console.WriteLine($"💡 Loaded {AvailableFieldTypes.Count} field type suggestions");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error loading field type suggestions: {ex.Message}");
+            // Fallback to basic suggestions
+            LoadFallbackSuggestions();
+        }
+    }
+
+    /// <summary>
+    /// Generate smart field suggestions based on template context and column headers
+    /// </summary>
+    private List<string> GenerateSmartSuggestions()
+    {
+        var suggestions = new List<string>();
+        
+        // Basic common fields across different document types
+        suggestions.AddRange(new[]
+        {
+            "Product Name", "Product ID", "SKU", "Price", "Quantity", "Total Amount",
+            "Customer Name", "Order Number", "Date", "Category", "Description",
+            "Image URL", "Product Image", "Thumbnail", "Weight", "Dimensions",
+            "Material", "Color", "Size", "Brand", "Supplier", "Stock Level",
+            "Invoice Number", "Account Number", "Due Date", "Tax Amount", "Subtotal"
+        });
+
+        // Smart suggestions based on Excel column headers
+        if (ExcelColumns != null && ExcelColumns.Any())
+        {
+            foreach (var column in ExcelColumns)
+            {
+                // Convert column headers to suggested field names
+                var headerSuggestion = ConvertHeaderToFieldName(column);
+                if (!string.IsNullOrEmpty(headerSuggestion))
+                {
+                    suggestions.Add(headerSuggestion);
+                }
+            }
+        }
+
+        return suggestions.Distinct().ToList();
+    }
+
+    /// <summary>
+    /// Convert Excel column header to suggested field name
+    /// </summary>
+    private string ConvertHeaderToFieldName(string columnHeader)
+    {
+        if (string.IsNullOrWhiteSpace(columnHeader)) return "";
+        
+        // Smart conversion patterns
+        var header = columnHeader.ToLower().Trim();
+        
+        return header switch
+        {
+            var h when h.Contains("image") => "Product Image",
+            var h when h.Contains("photo") => "Product Photo", 
+            var h when h.Contains("price") => "Unit Price",
+            var h when h.Contains("cost") => "Cost",
+            var h when h.Contains("total") => "Total Amount",
+            var h when h.Contains("qty") || h.Contains("quantity") => "Quantity",
+            var h when h.Contains("sku") => "SKU",
+            var h when h.Contains("id") => "Product ID",
+            var h when h.Contains("name") || h.Contains("title") => "Product Name",
+            var h when h.Contains("desc") => "Description",
+            var h when h.Contains("cat") => "Category",
+            var h when h.Contains("tag") => "Tags",
+            _ => columnHeader // Use original if no pattern matches
+        };
+    }
+
+    /// <summary>
+    /// Fallback suggestions if database loading fails
+    /// </summary>
+    private void LoadFallbackSuggestions()
+    {
+        AvailableFieldTypes.Clear();
+        var fallback = new[]
+        {
+            "Product Name", "Product ID", "SKU", "Price", "Quantity", "Total Amount",
+            "Description", "Category", "Image URL", "Date", "Custom Field"
+        };
+        
+        foreach (var item in fallback)
+        {
+            AvailableFieldTypes.Add(item);
+        }
+    }
+
+    /// <summary>
+    /// Detect template pattern based on column headers and content
+    /// </summary>
+    private string DetectTemplatePattern()
+    {
+        try
+        {
+            if (ExcelColumns == null || !ExcelColumns.Any())
+            {
+                return "No pattern detected - Empty template";
+            }
+
+            var allHeaders = string.Join(" ", ExcelColumns).ToLower();
+            
+            // E-commerce patterns
+            if (allHeaders.Contains("image") && allHeaders.Contains("sku"))
+            {
+                return "🛒 E-commerce Product Template";
+            }
+            
+            if (allHeaders.Contains("price") && allHeaders.Contains("product"))
+            {
+                return "🛍️ Product Catalog Template";
+            }
+            
+            // Financial patterns
+            if (allHeaders.Contains("invoice") && allHeaders.Contains("amount"))
+            {
+                return "💰 Invoice/Billing Template";
+            }
+            
+            if (allHeaders.Contains("account") && allHeaders.Contains("balance"))
+            {
+                return "🏦 Financial Report Template";
+            }
+            
+            // Inventory patterns
+            if (allHeaders.Contains("stock") && allHeaders.Contains("quantity"))
+            {
+                return "📦 Inventory Management Template";
+            }
+            
+            // General patterns
+            if (allHeaders.Contains("date") && allHeaders.Contains("total"))
+            {
+                return "📊 General Business Template";
+            }
+            
+            // Medical patterns
+            if (allHeaders.Contains("patient") || allHeaders.Contains("medical"))
+            {
+                return "🏥 Medical/Healthcare Template";
+            }
+            
+            // Service patterns
+            if (allHeaders.Contains("service") || allHeaders.Contains("work"))
+            {
+                return "🔧 Service/Work Order Template";
+            }
+
+            return $"📋 Custom Template ({ExcelColumns.Count} columns)";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error detecting pattern: {ex.Message}");
+            return "❓ Pattern detection failed";
         }
     }
 
