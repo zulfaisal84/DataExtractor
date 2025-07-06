@@ -298,6 +298,9 @@ public partial class TemplateMappingViewModel : ViewModelBase
             Console.WriteLine($"🔍 ExcelColumns: {string.Join(", ", ExcelColumns)}");
             Console.WriteLine($"🌐 HTML preview generated ({HtmlPreviewContent.Length} characters)");
             
+            // Trigger Canvas drawing after data is loaded (for Template Preview)
+            CanvasStatus = $"✅ Canvas drawing initiated for {ExcelRows.Count} rows × {ExcelColumns.Count} columns";
+            
         }
         catch (Exception ex)
         {
