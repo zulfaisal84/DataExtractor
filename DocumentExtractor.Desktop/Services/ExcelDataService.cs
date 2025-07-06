@@ -67,7 +67,11 @@ public class ExcelDataService
         var startRow = worksheet.Dimension?.Start.Row ?? 1;
         var endRow = worksheet.Dimension?.End.Row ?? 1;
         var startCol = worksheet.Dimension?.Start.Column ?? 1;
-        var endCol = worksheet.Dimension?.End.Column ?? 1;
+        
+        // Use Excel's actual dimension or force a wider range to show all possible columns
+        var endCol = Math.Max(worksheet.Dimension?.End.Column ?? 50, 25); // Force minimum 25 columns (up to Y)
+        
+        Console.WriteLine($"📊 Loading complete Excel range: Rows {startRow}-{endRow}, Columns {startCol}-{endCol} (Sheet: {worksheet.Name})");
 
         // Create columns with Excel-style headers (A, B, C, D...)
         for (int col = startCol; col <= endCol; col++)
@@ -89,6 +93,12 @@ public class ExcelDataService
                 var cellValue = cell.Value?.ToString() ?? string.Empty;
                 var columnName = GetExcelColumnName(col);
                 var cellReference = GetExcelCellReference(row, col);
+                
+                // Debug: Log non-empty cells in columns H, I, J
+                if (!string.IsNullOrEmpty(cellValue) && (col == 8 || col == 9 || col == 10))
+                {
+                    Console.WriteLine($"🔍 Found data in {cellReference}: '{cellValue}'");
+                }
                 
                 // Add to DataTable (legacy support)
                 dataRow[columnName] = cellValue;
@@ -123,6 +133,7 @@ public class ExcelDataService
             WorksheetName = worksheet.Name
         };
     }
+
 
     /// <summary>
     /// Convert column number to Excel column name (1=A, 2=B, 26=Z, 27=AA, etc.).
