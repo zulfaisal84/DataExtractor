@@ -1,0 +1,233 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ExcelRenderingTests.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
+        x:Class="ExcelRenderingTests.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="Excel Rendering Tests - Technology Comparison"
+        MinWidth="1000" MinHeight="700">
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#2C3E50" Padding="20">
+            <StackPanel>
+                <TextBlock Text="🧪 Excel Rendering Technology Tests" 
+                          FontSize="24" FontWeight="Bold" Foreground="White" 
+                          HorizontalAlignment="Center"/>
+                <TextBlock Text="Testing 6 different approaches to solve Excel DataGrid rendering issues" 
+                          FontSize="14" Foreground="LightGray" 
+                          HorizontalAlignment="Center" Margin="0,5,0,0"/>
+            </StackPanel>
+        </Border>
+        
+        <!-- Main Content - Tabs -->
+        <TabControl Grid.Row="1" Margin="10">
+            
+            <!-- Tab 1: DataGrid Debugging -->
+            <TabItem Header="📊 DataGrid Fix">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <Border Grid.Row="0" Background="LightBlue" Padding="15" Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="Tab 1: Avalonia DataGrid Debugging" FontSize="18" FontWeight="Bold"/>
+                            <TextBlock Text="Goal: Fix the current DataGrid binding issues that cause empty display" FontSize="12" Margin="0,5,0,0"/>
+                        </StackPanel>
+                    </Border>
+                    
+                    <ScrollViewer Grid.Row="1">
+                        <StackPanel Spacing="10">
+                            <Button Content="🔄 Load Excel Data" Command="{Binding LoadExcelDataCommand}" 
+                                   Background="Green" Foreground="White" Padding="10" HorizontalAlignment="Left"/>
+                            
+                            <TextBlock Text="{Binding StatusMessage}" FontSize="14" FontWeight="Bold"/>
+                            
+                            <Border Background="WhiteSmoke" BorderBrush="Gray" BorderThickness="1" Padding="5">
+                                <StackPanel>
+                                    <TextBlock Text="DataGrid Test:" FontWeight="Bold" Margin="0,0,0,5"/>
+                                    <DataGrid Name="TestDataGrid" 
+                                             ItemsSource="{Binding ExcelDataTable}"
+                                             IsReadOnly="True"
+                                             GridLinesVisibility="All"
+                                             HeadersVisibility="Column"
+                                             AutoGenerateColumns="True"
+                                             MinHeight="300"
+                                             Background="White"/>
+                                </StackPanel>
+                            </Border>
+                            
+                            <Border Background="LightYellow" BorderBrush="Orange" BorderThickness="1" Padding="10">
+                                <StackPanel>
+                                    <TextBlock Text="Debug Information:" FontWeight="Bold"/>
+                                    <TextBlock Text="{Binding DebugInfo}" FontSize="11" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                    
+                    <Border Grid.Row="2" Background="LightGray" Padding="10">
+                        <TextBlock Text="Status: Testing Avalonia DataGrid with various binding approaches" FontSize="12"/>
+                    </Border>
+                </Grid>
+            </TabItem>
+            
+            <!-- Tab 2: WebView Solutions -->
+            <TabItem Header="🌐 WebView HTML">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <Border Grid.Row="0" Background="LightGreen" Padding="15" Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="Tab 2: WebView HTML Table Rendering" FontSize="18" FontWeight="Bold"/>
+                            <TextBlock Text="Goal: Test HTML table generation with WebView for reliable Excel display" FontSize="12" Margin="0,5,0,0"/>
+                        </StackPanel>
+                    </Border>
+                    
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="200"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <!-- Controls -->
+                        <Border Grid.Column="0" Background="WhiteSmoke" Padding="10" Margin="0,0,10,0">
+                            <StackPanel Spacing="10">
+                                <Button Content="🔄 Generate HTML" Command="{Binding GenerateHtmlCommand}" 
+                                       Background="Blue" Foreground="White" Padding="10"/>
+                                <Button Content="📊 Load in WebView" Command="{Binding LoadWebViewCommand}" 
+                                       Background="Purple" Foreground="White" Padding="10"/>
+                                <TextBlock Text="HTML Size:" FontWeight="Bold"/>
+                                <TextBlock Text="{Binding HtmlContentSize}" FontSize="12"/>
+                                <TextBlock Text="WebView Status:" FontWeight="Bold"/>
+                                <TextBlock Text="{Binding WebViewStatus}" FontSize="12"/>
+                            </StackPanel>
+                        </Border>
+                        
+                        <!-- WebView - temporarily disabled -->
+                        <Border Grid.Column="1" BorderBrush="Gray" BorderThickness="1" Background="LightGray">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock Text="🌐" FontSize="36"/>
+                                <TextBlock Text="WebView Preview" FontWeight="Bold" Margin="0,10,0,0"/>
+                                <TextBlock Text="WebView package integration pending" FontSize="12" 
+                                          Foreground="DarkGray" Margin="0,5,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                    
+                    <Border Grid.Row="2" Background="LightGray" Padding="10">
+                        <TextBlock Text="Status: Testing Avalonia.WebView with HTML table generation" FontSize="12"/>
+                    </Border>
+                </Grid>
+            </TabItem>
+            
+            <!-- Tab 3: Third-Party Controls -->
+            <TabItem Header="🏢 Third-Party">
+                <Grid>
+                    <Border Background="LightCoral" Padding="20">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock Text="🏢" FontSize="48" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Third-Party Controls Testing" FontSize="18" FontWeight="Bold" 
+                                      HorizontalAlignment="Center" Margin="0,10,0,0"/>
+                            <TextBlock Text="Syncfusion, DevExpress, Telerik evaluation" FontSize="12" 
+                                      HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                            <TextBlock Text="Implementation pending..." FontSize="10" 
+                                      HorizontalAlignment="Center" Margin="0,20,0,0" FontStyle="Italic"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+            
+            <!-- Tab 4: Custom Canvas -->
+            <TabItem Header="🎨 Custom Canvas">
+                <Grid>
+                    <Border Background="LightSalmon" Padding="20">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock Text="🎨" FontSize="48" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Custom Canvas Rendering" FontSize="18" FontWeight="Bold" 
+                                      HorizontalAlignment="Center" Margin="0,10,0,0"/>
+                            <TextBlock Text="Direct cell-by-cell Canvas drawing" FontSize="12" 
+                                      HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                            <TextBlock Text="Implementation pending..." FontSize="10" 
+                                      HorizontalAlignment="Center" Margin="0,20,0,0" FontStyle="Italic"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+            
+            <!-- Tab 5: Image-Based -->
+            <TabItem Header="🖼️ Image Based">
+                <Grid>
+                    <Border Background="LightPink" Padding="20">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock Text="🖼️" FontSize="48" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Image-Based Rendering" FontSize="18" FontWeight="Bold" 
+                                      HorizontalAlignment="Center" Margin="0,10,0,0"/>
+                            <TextBlock Text="Convert Excel to image with click mapping" FontSize="12" 
+                                      HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                            <TextBlock Text="Implementation pending..." FontSize="10" 
+                                      HorizontalAlignment="Center" Margin="0,20,0,0" FontStyle="Italic"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+            
+            <!-- Tab 6: Alternative Layouts -->
+            <TabItem Header="🔧 Alternative UI">
+                <Grid>
+                    <Border Background="LightSeaGreen" Padding="20">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock Text="🔧" FontSize="48" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Alternative Layout Controls" FontSize="18" FontWeight="Bold" 
+                                      HorizontalAlignment="Center" Margin="0,10,0,0"/>
+                            <TextBlock Text="ItemsControl, TreeView, ListBox approaches" FontSize="12" 
+                                      HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                            <TextBlock Text="Implementation pending..." FontSize="10" 
+                                      HorizontalAlignment="Center" Margin="0,20,0,0" FontStyle="Italic"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+            
+        </TabControl>
+        
+        <!-- Footer Status -->
+        <Border Grid.Row="2" Background="#34495E" Padding="10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <TextBlock Grid.Column="0" Text="{Binding GlobalStatus}" Foreground="White" VerticalAlignment="Center"/>
+                
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="15">
+                    <TextBlock Text="Excel File: TestData/Database.xlsx" Foreground="LightGray" VerticalAlignment="Center"/>
+                    <Rectangle Width="12" Height="12" Fill="Green" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+        
+    </Grid>
+
+</Window>
