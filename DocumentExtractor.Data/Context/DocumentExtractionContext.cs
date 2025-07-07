@@ -53,6 +53,24 @@ namespace DocumentExtractor.Data.Context
         public DbSet<TemplateFieldMapping> TemplateFieldMappings { get; set; } = null!;
 
         /// <summary>
+        /// Table for storing strategic mapping rules that automate field mapping based on patterns.
+        /// Rules contain conditions (IF document matches pattern) and actions (THEN apply mappings).
+        /// </summary>
+        public DbSet<MappingRule> MappingRules { get; set; } = null!;
+
+        /// <summary>
+        /// Table for storing conditions that determine when mapping rules apply.
+        /// Conditions use pattern matching to identify document characteristics.
+        /// </summary>
+        public DbSet<RuleCondition> RuleConditions { get; set; } = null!;
+
+        /// <summary>
+        /// Table for storing actions to take when mapping rule conditions are met.
+        /// Actions define how to map extracted fields to template locations.
+        /// </summary>
+        public DbSet<RuleAction> RuleActions { get; set; } = null!;
+
+        /// <summary>
         /// Default constructor for dependency injection and migrations.
         /// </summary>
         public DocumentExtractionContext()
@@ -130,6 +148,11 @@ namespace DocumentExtractor.Data.Context
             
             // Configure TemplateFieldMapping entity
             ConfigureTemplateFieldMapping(modelBuilder);
+            
+            // Configure MappingRule entities
+            ConfigureMappingRule(modelBuilder);
+            ConfigureRuleCondition(modelBuilder);
+            ConfigureRuleAction(modelBuilder);
 
             // Set up database indexes for better query performance
             ConfigureIndexes(modelBuilder);
@@ -426,6 +449,168 @@ namespace DocumentExtractor.Data.Context
         }
 
         /// <summary>
+        /// Configure the MappingRule entity for database storage.
+        /// </summary>
+        /// <param name="modelBuilder">Model builder instance</param>
+        private static void ConfigureMappingRule(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<MappingRule>(entity =>
+            {
+                // Primary key
+                entity.HasKey(e => e.Id);
+                
+                // Configure string properties
+                entity.Property(e => e.Name)
+                    .IsRequired()
+                    .HasMaxLength(200);
+                
+                entity.Property(e => e.Description)
+                    .HasMaxLength(500);
+                
+                // Configure date properties for SQLite
+                entity.Property(e => e.CreatedDate)
+                    .HasColumnType("TEXT")
+                    .HasConversion(
+                        v => v.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        v => DateTime.Parse(v));
+                
+                entity.Property(e => e.LastModifiedDate)
+                    .HasColumnType("TEXT")
+                    .HasConversion(
+                        v => v != null ? v.Value.ToString("yyyy-MM-ddTHH:mm:ss.fffZ") : null,
+                        v => v != null ? DateTime.Parse(v) : null);
+                
+                // Configure decimal properties
+                entity.Property(e => e.SuccessRate)
+                    .HasColumnType("REAL");
+                
+                // Configure the one-to-many relationships
+                entity.HasMany(e => e.Conditions)
+                    .WithOne(c => c.MappingRule)
+                    .HasForeignKey(c => c.MappingRuleId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                
+                entity.HasMany(e => e.Actions)
+                    .WithOne(a => a.MappingRule)
+                    .HasForeignKey(a => a.MappingRuleId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+        }
+
+        /// <summary>
+        /// Configure the RuleCondition entity for database storage.
+        /// </summary>
+        /// <param name="modelBuilder">Model builder instance</param>
+        private static void ConfigureRuleCondition(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<RuleCondition>(entity =>
+            {
+                // Primary key
+                entity.HasKey(e => e.Id);
+                
+                // Configure string properties
+                entity.Property(e => e.MappingRuleId)
+                    .IsRequired();
+                
+                entity.Property(e => e.ConditionType)
+                    .IsRequired()
+                    .HasMaxLength(50);
+                
+                entity.Property(e => e.FieldName)
+                    .IsRequired()
+                    .HasMaxLength(100);
+                
+                entity.Property(e => e.Operator)
+                    .IsRequired()
+                    .HasMaxLength(20);
+                
+                entity.Property(e => e.Value)
+                    .IsRequired()
+                    .HasMaxLength(200);
+                
+                entity.Property(e => e.LogicalOperator)
+                    .HasMaxLength(5);
+                
+                entity.Property(e => e.GroupId)
+                    .HasMaxLength(50);
+                
+                entity.Property(e => e.ParentConditionId)
+                    .HasMaxLength(50);
+                
+                entity.Property(e => e.Description)
+                    .HasMaxLength(200);
+                
+                // Configure decimal properties
+                entity.Property(e => e.Weight)
+                    .HasColumnType("REAL");
+                
+                // Configure date property for SQLite
+                entity.Property(e => e.CreatedDate)
+                    .HasColumnType("TEXT")
+                    .HasConversion(
+                        v => v.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        v => DateTime.Parse(v));
+                
+                // Configure the many-to-one relationship with MappingRule
+                entity.HasOne(e => e.MappingRule)
+                    .WithMany(r => r.Conditions)
+                    .HasForeignKey(e => e.MappingRuleId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+        }
+
+        /// <summary>
+        /// Configure the RuleAction entity for database storage.
+        /// </summary>
+        /// <param name="modelBuilder">Model builder instance</param>
+        private static void ConfigureRuleAction(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<RuleAction>(entity =>
+            {
+                // Primary key
+                entity.HasKey(e => e.Id);
+                
+                // Configure string properties
+                entity.Property(e => e.MappingRuleId)
+                    .IsRequired();
+                
+                entity.Property(e => e.ActionType)
+                    .IsRequired()
+                    .HasMaxLength(50);
+                
+                entity.Property(e => e.SourceFieldName)
+                    .IsRequired()
+                    .HasMaxLength(100);
+                
+                entity.Property(e => e.TargetLocation)
+                    .IsRequired()
+                    .HasMaxLength(100);
+                
+                entity.Property(e => e.TargetLocationType)
+                    .HasMaxLength(50);
+                
+                entity.Property(e => e.DefaultValue)
+                    .HasMaxLength(200);
+                
+                entity.Property(e => e.Description)
+                    .HasMaxLength(200);
+                
+                // Configure date property for SQLite
+                entity.Property(e => e.CreatedDate)
+                    .HasColumnType("TEXT")
+                    .HasConversion(
+                        v => v.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        v => DateTime.Parse(v));
+                
+                // Configure the many-to-one relationship with MappingRule
+                entity.HasOne(e => e.MappingRule)
+                    .WithMany(r => r.Actions)
+                    .HasForeignKey(e => e.MappingRuleId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+        }
+
+        /// <summary>
         /// Configure database indexes for better query performance.
         /// Indexes speed up queries but take additional storage space.
         /// </summary>
@@ -481,6 +666,37 @@ namespace DocumentExtractor.Data.Context
             modelBuilder.Entity<TemplateFieldMapping>()
                 .HasIndex(e => e.FieldName)
                 .HasDatabaseName("IX_TemplateFieldMappings_FieldName");
+
+            // Mapping rule indexes for fast rule evaluation
+            modelBuilder.Entity<MappingRule>()
+                .HasIndex(e => e.IsActive)
+                .HasDatabaseName("IX_MappingRules_IsActive");
+            
+            modelBuilder.Entity<MappingRule>()
+                .HasIndex(e => e.Priority)
+                .HasDatabaseName("IX_MappingRules_Priority");
+            
+            modelBuilder.Entity<MappingRule>()
+                .HasIndex(e => e.SuccessRate)
+                .HasDatabaseName("IX_MappingRules_SuccessRate");
+
+            // Rule condition indexes for pattern matching
+            modelBuilder.Entity<RuleCondition>()
+                .HasIndex(e => e.MappingRuleId)
+                .HasDatabaseName("IX_RuleConditions_MappingRuleId");
+            
+            modelBuilder.Entity<RuleCondition>()
+                .HasIndex(e => new { e.ConditionType, e.FieldName })
+                .HasDatabaseName("IX_RuleConditions_Type_Field");
+
+            // Rule action indexes for field mapping
+            modelBuilder.Entity<RuleAction>()
+                .HasIndex(e => e.MappingRuleId)
+                .HasDatabaseName("IX_RuleActions_MappingRuleId");
+            
+            modelBuilder.Entity<RuleAction>()
+                .HasIndex(e => e.SourceFieldName)
+                .HasDatabaseName("IX_RuleActions_SourceFieldName");
         }
 
         /// <summary>

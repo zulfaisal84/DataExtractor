@@ -11,9 +11,12 @@ using DocumentExtractor.Core.Models;
 using DocumentExtractor.Data.Context;
 using DocumentExtractor.Desktop.Models;
 using DocumentExtractor.Desktop.Services;
+using DocumentExtractor.Services.Interfaces;
+using DocumentExtractor.Services.Services;
 using Microsoft.EntityFrameworkCore;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
+using Avalonia.Controls;
 
 namespace DocumentExtractor.Desktop.ViewModels;
 
@@ -26,6 +29,7 @@ public partial class TemplateMappingViewModel : ViewModelBase
     private readonly DocumentExtractionContext _context;
     private readonly ExcelDataService _excelDataService;
     private readonly HtmlTemplateService _htmlTemplateService;
+    private readonly IRuleEngine _ruleEngine;
 
     [ObservableProperty]
     private string _statusMessage = "Ready for template mapping";
@@ -45,17 +49,12 @@ public partial class TemplateMappingViewModel : ViewModelBase
     [ObservableProperty]
     private string _mappingInstructions = "Load a template to begin click-to-teach field mapping";
 
-    [ObservableProperty]
-    private double _zoomLevel = 1.0;
 
     [ObservableProperty]
     private bool _isMappingMode = true; // Always in mapping mode with simplified workflow
 
     [ObservableProperty]
-    private string _currentFieldName = "";
-
-    [ObservableProperty]
-    private string _currentFieldType = "";
+    private string _currentFieldType = ""; // Now serves as unified field name/type
 
     [ObservableProperty]
     private string _currentFieldDescription = "";
@@ -100,6 +99,12 @@ public partial class TemplateMappingViewModel : ViewModelBase
     [ObservableProperty]
     private bool _showSaveAsRule = false;
 
+    [ObservableProperty]
+    private bool _isManagingRules = false;
+
+    [ObservableProperty]
+    private ObservableCollection<MappingRule> _availableRules = new();
+
     /// <summary>
     /// Whether Excel data is available for display
     /// </summary>
@@ -124,7 +129,8 @@ public partial class TemplateMappingViewModel : ViewModelBase
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _excelDataService = new ExcelDataService();
         _htmlTemplateService = new HtmlTemplateService();
-        Console.WriteLine("🗺️ TemplateMappingViewModel initialized with Excel data service");
+        _ruleEngine = new RuleEngineService(context);
+        Console.WriteLine("🗺️ TemplateMappingViewModel initialized with Excel data service and rule engine");
     }
 
     /// <summary>
@@ -821,14 +827,14 @@ public partial class TemplateMappingViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Save a new field mapping
+    /// Save a new field mapping with optional rule creation
     /// </summary>
     [RelayCommand]
     private async Task SaveFieldMapping()
     {
-        if (CurrentTemplate == null || string.IsNullOrWhiteSpace(CurrentFieldName))
+        if (CurrentTemplate == null || string.IsNullOrWhiteSpace(CurrentFieldType))
         {
-            StatusMessage = "Please specify field name and select a cell";
+            StatusMessage = "Please specify field and select a cell";
             return;
         }
 
@@ -848,8 +854,8 @@ public partial class TemplateMappingViewModel : ViewModelBase
             {
                 Id = Guid.NewGuid().ToString(),
                 TemplateId = CurrentTemplate.Id,
-                FieldName = CurrentFieldName,
-                LocationType = DetermineFieldType(CurrentFieldName),
+                FieldName = CurrentFieldType, // Now unified field name/type
+                LocationType = DetermineFieldType(CurrentFieldType),
                 TargetLocation = targetLocation,
                 Description = CurrentFieldDescription,
                 CreatedDate = DateTime.Now
@@ -860,12 +866,19 @@ public partial class TemplateMappingViewModel : ViewModelBase
 
             FieldMappings.Add(mapping);
 
+            // Check if user wants to save as a rule
+            if (ShowSaveAsRule)
+            {
+                await CreateMappingRuleAsync(mapping);
+            }
+
             // Clear current selection
-            CurrentFieldName = "";
+            // Clear current field type after saving
             CurrentFieldDescription = "";
             SelectedCellReference = "";
             SelectedRow = -1;
             SelectedColumn = -1;
+            ShowSaveAsRule = false; // Reset checkbox
             
             StatusMessage = $"Field mapping saved to {targetLocation}";
 
@@ -879,34 +892,141 @@ public partial class TemplateMappingViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Zoom in on template preview
+    /// Create a mapping rule from current field mapping and document pattern
     /// </summary>
-    [RelayCommand]
-    private void ZoomIn()
+    private async Task CreateMappingRuleAsync(TemplateFieldMapping mapping)
     {
-        ZoomLevel = Math.Min(ZoomLevel + 0.25, 3.0);
-        StatusMessage = $"Zoom: {ZoomLevel:P0}";
+        try
+        {
+            // Generate rule name based on pattern and field
+            var ruleName = $"{DetectedPattern} - {mapping.FieldName} Mapping";
+            var description = $"Auto-generated rule for mapping {mapping.FieldName} in {DetectedPattern} templates";
+
+            // Create document pattern from current context
+            var documentPattern = new DocumentPattern
+            {
+                TemplatePattern = DetectedPattern,
+                TemplateCategory = CurrentTemplate?.Category,
+                AvailableFields = new List<string> { mapping.FieldName },
+                CreatedDate = DateTime.UtcNow
+            };
+
+            // Create the rule with current mappings
+            var rule = await _ruleEngine.CreateRuleFromMappingsAsync(
+                ruleName, 
+                description, 
+                documentPattern, 
+                new List<TemplateFieldMapping> { mapping });
+
+            StatusMessage = $"✅ Rule '{ruleName}' created for automated mapping";
+            Console.WriteLine($"📝 RULE CREATED: {ruleName} with {rule.Actions.Count} actions");
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Warning: Field mapping saved but rule creation failed: {ex.Message}";
+            Console.WriteLine($"❌ Error creating mapping rule: {ex.Message}");
+        }
     }
 
     /// <summary>
-    /// Zoom out on template preview
+    /// Apply existing mapping rules to current template automatically
     /// </summary>
     [RelayCommand]
-    private void ZoomOut()
+    private async Task ApplyMappingRules()
     {
-        ZoomLevel = Math.Max(ZoomLevel - 0.25, 0.25);
-        StatusMessage = $"Zoom: {ZoomLevel:P0}";
+        try
+        {
+            if (CurrentTemplate == null)
+            {
+                StatusMessage = "Please load a template first";
+                return;
+            }
+
+            StatusMessage = "🎯 Applying mapping rules...";
+
+            // Create document pattern from current context
+            var documentPattern = new DocumentPattern
+            {
+                TemplatePattern = DetectedPattern,
+                TemplateCategory = CurrentTemplate.Category,
+                AvailableFields = AvailableFieldTypes.ToList(),
+                CreatedDate = DateTime.UtcNow
+            };
+
+            // Simulate extracted fields (in real scenario, these would come from document processing)
+            var mockExtractedFields = CreateMockExtractedFields();
+
+            // Apply mapping rules
+            var appliedMappings = await _ruleEngine.ApplyMappingRulesAsync(
+                documentPattern, 
+                CurrentTemplate.Id, 
+                mockExtractedFields);
+
+            if (appliedMappings.Any())
+            {
+                // Add applied mappings to the database and UI
+                foreach (var mapping in appliedMappings)
+                {
+                    _context.TemplateFieldMappings.Add(mapping);
+                    FieldMappings.Add(mapping);
+                }
+
+                await _context.SaveChangesAsync();
+
+                StatusMessage = $"✅ Applied {appliedMappings.Count} automatic mappings from rules";
+                Console.WriteLine($"🎯 RULES APPLIED: {appliedMappings.Count} automatic mappings");
+            }
+            else
+            {
+                StatusMessage = "ℹ️ No matching rules found - using manual mapping";
+                Console.WriteLine("🎯 RULES: No matching rules found for current pattern");
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error applying mapping rules: {ex.Message}";
+            Console.WriteLine($"❌ Error applying rules: {ex.Message}");
+        }
     }
 
     /// <summary>
-    /// Reset zoom to 100%
+    /// Create mock extracted fields for rule testing
+    /// TODO: Replace with real extracted fields from document processing
     /// </summary>
-    [RelayCommand]
-    private void ResetZoom()
+    private List<ExtractedField> CreateMockExtractedFields()
     {
-        ZoomLevel = 1.0;
-        StatusMessage = "Zoom reset to 100%";
+        return new List<ExtractedField>
+        {
+            new ExtractedField
+            {
+                Id = Guid.NewGuid().ToString(),
+                FieldName = "Product Name",
+                Value = "Sample Product",
+                Type = FieldType.Text,
+                Confidence = 0.95,
+                Source = "MockExtraction"
+            },
+            new ExtractedField
+            {
+                Id = Guid.NewGuid().ToString(),
+                FieldName = "SKU",
+                Value = "SKU-12345",
+                Type = FieldType.Text,
+                Confidence = 0.98,
+                Source = "MockExtraction"
+            },
+            new ExtractedField
+            {
+                Id = Guid.NewGuid().ToString(),
+                FieldName = "Price",
+                Value = "29.99",
+                Type = FieldType.Currency,
+                Confidence = 0.92,
+                Source = "MockExtraction"
+            }
+        };
     }
+
 
     /// <summary>
     /// Get mapping instructions based on file type
@@ -1026,6 +1146,383 @@ public partial class TemplateMappingViewModel : ViewModelBase
         {
             Console.WriteLine($"❌ Error in file picker: {ex.Message}");
             return null;
+        }
+    }
+
+    /// <summary>
+    /// Load sample Excel file for testing
+    /// </summary>
+    [RelayCommand]
+    private async Task LoadSampleTemplate()
+    {
+        try
+        {
+            IsProcessing = true;
+            StatusMessage = "Loading sample Excel template...";
+
+            var sampleFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Database.xlsx");
+            if (File.Exists(sampleFilePath))
+            {
+                await ProcessSelectedTemplate(sampleFilePath);
+                Console.WriteLine($"📊 Sample template loaded: {sampleFilePath}");
+            }
+            else
+            {
+                StatusMessage = "Sample Excel file not found - use 'Load Template' to select a file";
+                Console.WriteLine($"❌ Sample file not found at: {sampleFilePath}");
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error loading sample template: {ex.Message}";
+            Console.WriteLine($"❌ Error in LoadSampleTemplate: {ex.Message}");
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    /// <summary>
+    /// Show the rule management panel
+    /// </summary>
+    [RelayCommand]
+    private async Task ManageRules()
+    {
+        try
+        {
+            IsManagingRules = true;
+            StatusMessage = "Loading mapping rules...";
+            
+            // Load available rules from database
+            await RefreshRules();
+            
+            StatusMessage = $"Rule management panel open - {AvailableRules.Count} rules loaded";
+            Console.WriteLine($"⚙️ Rule management opened with {AvailableRules.Count} rules");
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error loading rules: {ex.Message}";
+            Console.WriteLine($"❌ Error in ManageRules: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Close the rule management panel
+    /// </summary>
+    [RelayCommand]
+    private void CloseRuleManagement()
+    {
+        IsManagingRules = false;
+        StatusMessage = "Rule management closed";
+        Console.WriteLine("⚙️ Rule management panel closed");
+    }
+
+    /// <summary>
+    /// Refresh the list of available rules
+    /// </summary>
+    [RelayCommand]
+    private async Task RefreshRules()
+    {
+        try
+        {
+            var rules = await _ruleEngine.GetActiveRulesAsync();
+            AvailableRules.Clear();
+            
+            foreach (var rule in rules)
+            {
+                AvailableRules.Add(rule);
+            }
+            
+            StatusMessage = $"Rules refreshed - {AvailableRules.Count} rules loaded";
+            Console.WriteLine($"🔄 Rules refreshed: {AvailableRules.Count} rules loaded");
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error refreshing rules: {ex.Message}";
+            Console.WriteLine($"❌ Error in RefreshRules: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Toggle rule activation status
+    /// </summary>
+    [RelayCommand]
+    private async Task ToggleRuleActivation(MappingRule rule)
+    {
+        if (rule == null) return;
+
+        try
+        {
+            var newStatus = await _ruleEngine.ToggleRuleActivationAsync(rule.Id);
+            rule.IsActive = newStatus;
+            
+            var statusText = newStatus ? "activated" : "deactivated";
+            StatusMessage = $"Rule '{rule.Name}' {statusText}";
+            Console.WriteLine($"🔄 Rule '{rule.Name}' {statusText}");
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error toggling rule: {ex.Message}";
+            Console.WriteLine($"❌ Error in ToggleRuleActivation: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Test a rule with the current template
+    /// </summary>
+    [RelayCommand]
+    private async Task TestRule(MappingRule rule)
+    {
+        if (rule == null || CurrentTemplate == null)
+        {
+            StatusMessage = "Please load a template before testing rules";
+            return;
+        }
+
+        try
+        {
+            StatusMessage = $"Testing rule '{rule.Name}'...";
+            
+            // Create a document pattern from current template
+            var documentPattern = new DocumentPattern
+            {
+                SupplierName = "Test Supplier",
+                DocumentType = "Test Document",
+                TemplatePattern = DetectedPattern,
+                AvailableFields = AvailableFieldTypes.ToList()
+            };
+
+            // Create mock extracted fields
+            var extractedFields = new List<ExtractedField>();
+            for (int i = 0; i < Math.Min(5, AvailableFieldTypes.Count); i++)
+            {
+                extractedFields.Add(new ExtractedField
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    FieldName = AvailableFieldTypes[i],
+                    Value = $"Test Value {i + 1}",
+                    Type = FieldType.Text,
+                    Confidence = 0.95
+                });
+            }
+
+            var testResult = await _ruleEngine.TestRuleAsync(rule, documentPattern, extractedFields);
+            
+            // Create detailed test results message
+            string resultIcon = testResult.EvaluationResult.ShouldApply ? "✅ PASS" : "❌ FAIL";
+            string detailedMessage = $"🧪 Rule Test Results: {resultIcon}\n\n" +
+                                   $"📊 Match Score: {testResult.EvaluationResult.MatchScore:P1}\n" +
+                                   $"🎯 Confidence: {testResult.EvaluationResult.Confidence:P1}\n" +
+                                   $"✅ Would Apply: {(testResult.EvaluationResult.ShouldApply ? "Yes" : "No")}\n" +
+                                   $"📋 Mapped Fields: {testResult.MappedFields.Count}\n" +
+                                   $"❌ Unmapped Fields: {testResult.UnmappedFields.Count}\n\n" +
+                                   $"📝 Summary: {testResult.Summary}\n\n" +
+                                   $"🔍 Test Details:\n" +
+                                   $"• Template: {DetectedPattern}\n" +
+                                   $"• Mock Fields: {extractedFields.Count} test fields\n" +
+                                   $"• Rule Priority: {rule.Priority}\n" +
+                                   $"• Rule Success Rate: {rule.SuccessRate:P1}";
+
+            // Show results in a message box
+            await ShowTestResultsDialog(rule.Name, detailedMessage, testResult.EvaluationResult.ShouldApply);
+
+            StatusMessage = $"Rule '{rule.Name}' test: {resultIcon} ({testResult.EvaluationResult.MatchScore:P1})";
+            
+            Console.WriteLine($"🧪 Rule test result for '{rule.Name}':");
+            Console.WriteLine($"   📊 Match Score: {testResult.EvaluationResult.MatchScore:P1}");
+            Console.WriteLine($"   🎯 Confidence: {testResult.EvaluationResult.Confidence:P1}");
+            Console.WriteLine($"   ✅ Should Apply: {testResult.EvaluationResult.ShouldApply}");
+            Console.WriteLine($"   📋 Mapped Fields: {testResult.MappedFields.Count}");
+            Console.WriteLine($"   ❌ Unmapped Fields: {testResult.UnmappedFields.Count}");
+            Console.WriteLine($"   📝 Summary: {testResult.Summary}");
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error testing rule: {ex.Message}";
+            Console.WriteLine($"❌ Error in TestRule: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Delete a rule permanently
+    /// </summary>
+    [RelayCommand]
+    private async Task DeleteRule(MappingRule rule)
+    {
+        if (rule == null) return;
+
+        try
+        {
+            StatusMessage = $"Deleting rule '{rule.Name}'...";
+            
+            await _ruleEngine.DeleteRuleAsync(rule.Id);
+            AvailableRules.Remove(rule);
+            
+            StatusMessage = $"Rule '{rule.Name}' deleted";
+            Console.WriteLine($"🗑️ Rule '{rule.Name}' deleted permanently");
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error deleting rule: {ex.Message}";
+            Console.WriteLine($"❌ Error in DeleteRule: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// View detailed rule statistics
+    /// </summary>
+    [RelayCommand]
+    private async Task ViewRuleStatistics()
+    {
+        try
+        {
+            StatusMessage = "Loading rule statistics...";
+            
+            var statistics = await _ruleEngine.GetStatisticsAsync();
+            
+            Console.WriteLine("📊 RULE ENGINE STATISTICS");
+            Console.WriteLine($"   🎯 Total Active Rules: {statistics.TotalActiveRules}");
+            Console.WriteLine($"   📈 Total Applications: {statistics.TotalRuleApplications}");
+            Console.WriteLine($"   ✅ Overall Success Rate: {statistics.OverallSuccessRate:P1}");
+            Console.WriteLine($"   ⚡ Average Execution Time: {statistics.AverageExecutionTimeMs:F1}ms");
+            
+            if (statistics.TopRules.Any())
+            {
+                Console.WriteLine("   🏆 Top Performing Rules:");
+                foreach (var topRule in statistics.TopRules.Take(3))
+                {
+                    Console.WriteLine($"      • {topRule.RuleName}: {topRule.SuccessRate:P1} ({topRule.UsageCount} uses)");
+                }
+            }
+            
+            StatusMessage = $"Statistics: {statistics.TotalActiveRules} rules, {statistics.OverallSuccessRate:P1} success rate";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error loading statistics: {ex.Message}";
+            Console.WriteLine($"❌ Error in ViewRuleStatistics: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Show test results in a user-friendly dialog
+    /// </summary>
+    private async Task ShowTestResultsDialog(string ruleName, string testResults, bool testPassed)
+    {
+        try
+        {
+            // Get the main window for dialog display
+            var mainWindow = Avalonia.Application.Current?.ApplicationLifetime is 
+                Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
+                ? desktop.MainWindow : null;
+
+            if (mainWindow == null)
+            {
+                Console.WriteLine("❌ No main window available for test results dialog");
+                StatusMessage = "Test completed - check console for results";
+                return;
+            }
+
+            // Create dialog title with result icon
+            string dialogTitle = testPassed ? "✅ Rule Test PASSED" : "❌ Rule Test FAILED";
+            string fullTitle = $"{dialogTitle} - {ruleName}";
+
+            // Create a simple custom dialog window
+            var dialogWindow = new Window
+            {
+                Title = fullTitle,
+                Width = 600,
+                Height = 400,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                CanResize = true,
+                ShowInTaskbar = false
+            };
+
+            // Create content panel
+            var panel = new StackPanel
+            {
+                Margin = new Avalonia.Thickness(20),
+                Spacing = 15
+            };
+
+            // Add result icon and title
+            var headerPanel = new StackPanel
+            {
+                Orientation = Avalonia.Layout.Orientation.Horizontal,
+                Spacing = 10
+            };
+
+            var iconText = new TextBlock
+            {
+                Text = testPassed ? "✅" : "❌",
+                FontSize = 24,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+            };
+
+            var titleText = new TextBlock
+            {
+                Text = dialogTitle,
+                FontSize = 16,
+                FontWeight = Avalonia.Media.FontWeight.Bold,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+            };
+
+            headerPanel.Children.Add(iconText);
+            headerPanel.Children.Add(titleText);
+            panel.Children.Add(headerPanel);
+
+            // Add scrollable test results
+            var scrollViewer = new ScrollViewer
+            {
+                Height = 250,
+                VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto
+            };
+
+            var resultsText = new TextBlock
+            {
+                Text = testResults,
+                TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                FontFamily = "Consolas,Monaco,monospace",
+                FontSize = 11,
+                Background = Avalonia.Media.Brushes.LightGray,
+                Padding = new Avalonia.Thickness(10)
+            };
+
+            scrollViewer.Content = resultsText;
+            panel.Children.Add(scrollViewer);
+
+            // Add OK button
+            var okButton = new Button
+            {
+                Content = "OK",
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+                Padding = new Avalonia.Thickness(20, 8),
+                Background = testPassed ? Avalonia.Media.Brushes.Green : Avalonia.Media.Brushes.Orange,
+                Foreground = Avalonia.Media.Brushes.White
+            };
+
+            okButton.Click += (s, e) => dialogWindow.Close();
+            panel.Children.Add(okButton);
+
+            dialogWindow.Content = panel;
+
+            // Show the dialog
+            await dialogWindow.ShowDialog(mainWindow);
+            
+            Console.WriteLine($"🧪 Test results dialog shown for rule: {ruleName}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error showing test results dialog: {ex.Message}");
+            
+            // Fallback: Show results in status message
+            StatusMessage = $"Test {(testPassed ? "PASSED" : "FAILED")} - Rule: {ruleName}";
+            
+            // Also log full results to console as backup
+            Console.WriteLine("🧪 RULE TEST RESULTS (Dialog failed, showing in console):");
+            Console.WriteLine($"Rule: {ruleName}");
+            Console.WriteLine(testResults);
         }
     }
 }

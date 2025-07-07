@@ -55,26 +55,9 @@
                     </Grid.RowDefinitions>
                     
                     <!-- Preview Header -->
-                    <Grid Grid.Row="0" Margin="0,0,0,10">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        
-                        <TextBlock Grid.Column="0" Text="📋 Template Preview" 
-                                  FontSize="16" FontWeight="Bold" VerticalAlignment="Center"/>
-                        
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5">
-                            <Button Content="🔍+" Command="{Binding ZoomInCommand}" 
-                                   Width="30" Height="30" Padding="0"/>
-                            <Button Content="🔍-" Command="{Binding ZoomOutCommand}" 
-                                   Width="30" Height="30" Padding="0"/>
-                            <Button Content="🔄" Command="{Binding ResetZoomCommand}" 
-                                   Width="30" Height="30" Padding="0"/>
-                            <TextBlock Text="{Binding ZoomLevel, StringFormat={}{0:P0}}" 
-                                      VerticalAlignment="Center" Margin="5,0"/>
-                        </StackPanel>
-                    </Grid>
+                    <TextBlock Grid.Row="0" Text="📋 Template Preview" 
+                              FontSize="16" FontWeight="Bold" VerticalAlignment="Center" 
+                              Margin="0,0,0,10"/>
                     
                     <!-- Template Display Area -->
                     <Border Grid.Row="1" Background="WhiteSmoke" BorderBrush="Gray" BorderThickness="1" 
@@ -171,7 +154,7 @@
                     
                     <!-- Field Input Section -->
                     <StackPanel Grid.Row="1" Spacing="10" Margin="0,0,0,15">
-                        <TextBlock Text="Field Details:" FontWeight="Bold"/>
+                        <TextBlock Text="Smart Field Mapping:" FontWeight="Bold"/>
                         
                         <!-- Pattern Detection Display -->
                         <Border Background="LightBlue" BorderBrush="Blue" BorderThickness="1" 
@@ -183,18 +166,17 @@
                             </StackPanel>
                         </Border>
                         
-                        <TextBox Watermark="Field name (e.g., 'Total Amount')" 
-                                Text="{Binding CurrentFieldName}"
-                                IsEnabled="{Binding IsMappingMode}"/>
-                        
+                        <!-- Unified Smart Field Input -->
                         <AutoCompleteBox ItemsSource="{Binding AvailableFieldTypes}" 
                                         Text="{Binding CurrentFieldType}"
-                                        Watermark="Type or select field type (e.g., Product Image, SKU)"
-                                        IsEnabled="{Binding IsMappingMode}"/>
+                                        Watermark="Field name or type (e.g., 'Invoice Total', 'Currency', 'Product SKU')"
+                                        IsEnabled="{Binding IsMappingMode}"
+                                        FontSize="13"/>
                         
-                        <TextBox Watermark="Description (optional)" 
+                        <TextBox Watermark="Optional description or notes" 
                                 Text="{Binding CurrentFieldDescription}"
-                                IsEnabled="{Binding IsMappingMode}"/>
+                                IsEnabled="{Binding IsMappingMode}"
+                                FontSize="11"/>
                         
                         <!-- Save as Rule Option -->
                         <CheckBox Content="💡 Save as reusable mapping rule" 
@@ -207,11 +189,27 @@
                                Background="DarkGreen" Foreground="White"
                                IsEnabled="{Binding IsMappingMode}" 
                                HorizontalAlignment="Stretch"/>
+                        
+                        <Button Content="🎯 Apply Mapping Rules" 
+                               Command="{Binding ApplyMappingRulesCommand}"
+                               Background="DarkBlue" Foreground="White"
+                               IsEnabled="{Binding IsTemplateLoaded}" 
+                               HorizontalAlignment="Stretch"
+                               Margin="0,5,0,0"
+                               ToolTip.Tip="Automatically apply existing mapping rules to this template"/>
+                        
+                        <Button Content="⚙️ Manage Rules" 
+                               Command="{Binding ManageRulesCommand}"
+                               Background="Purple" Foreground="White"
+                               HorizontalAlignment="Stretch"
+                               Margin="0,5,0,0"
+                               ToolTip.Tip="View, activate, deactivate, and test mapping rules"/>
                     </StackPanel>
                     
                     <!-- Existing Mappings List -->
                     <Border Grid.Row="2" Background="WhiteSmoke" BorderBrush="LightGray" 
-                           BorderThickness="1" CornerRadius="5" Padding="10">
+                           BorderThickness="1" CornerRadius="5" Padding="10"
+                           IsVisible="{Binding !IsManagingRules}">
                         <StackPanel>
                             <TextBlock Text="📊 Current Mappings:" FontWeight="Bold" Margin="0,0,0,10"/>
                             
@@ -238,9 +236,139 @@
                         </StackPanel>
                     </Border>
                     
+                    <!-- Rule Management Panel -->
+                    <Border Grid.Row="2" Background="WhiteSmoke" BorderBrush="Purple" 
+                           BorderThickness="2" CornerRadius="5" Padding="10"
+                           IsVisible="{Binding IsManagingRules}">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="⚙️ Mapping Rules Management" FontWeight="Bold"/>
+                                <Button Grid.Column="1" Content="✕" 
+                                       Command="{Binding CloseRuleManagementCommand}"
+                                       Width="25" Height="25" Padding="0"
+                                       Background="Red" Foreground="White"
+                                       ToolTip.Tip="Close rule management"/>
+                            </Grid>
+                            
+                            <ScrollViewer MaxHeight="200" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding AvailableRules}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="White" BorderBrush="Purple" 
+                                                   BorderThickness="1" CornerRadius="3" 
+                                                   Padding="8" Margin="0,2">
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                    </Grid.RowDefinitions>
+                                                    
+                                                    <!-- Rule Header -->
+                                                    <Grid Grid.Row="0">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        
+                                                        <StackPanel Grid.Column="0">
+                                                            <TextBlock Text="{Binding Name}" 
+                                                                      FontWeight="Bold" FontSize="12"/>
+                                                            <TextBlock Text="{Binding Description}" 
+                                                                      FontSize="10" Foreground="Gray" 
+                                                                      TextWrapping="Wrap"/>
+                                                        </StackPanel>
+                                                        
+                                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="3">
+                                                            <!-- Active/Inactive Indicator -->
+                                                            <TextBlock Text="🟢" FontSize="12" 
+                                                                      IsVisible="{Binding IsActive}"
+                                                                      ToolTip.Tip="Rule is active"/>
+                                                            <TextBlock Text="🔴" FontSize="12" 
+                                                                      IsVisible="{Binding !IsActive}"
+                                                                      ToolTip.Tip="Rule is inactive"/>
+                                                        </StackPanel>
+                                                    </Grid>
+                                                    
+                                                    <!-- Rule Stats -->
+                                                    <Grid Grid.Row="1" Margin="0,5,0,0">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        
+                                                        <TextBlock Grid.Column="0" 
+                                                                  Text="{Binding Priority, StringFormat='Priority: {0}'}" 
+                                                                  FontSize="9" Foreground="Blue"/>
+                                                        <TextBlock Grid.Column="1" 
+                                                                  Text="{Binding SuccessRate, StringFormat='Success: {0:P0}'}" 
+                                                                  FontSize="9" Foreground="Green"/>
+                                                        <TextBlock Grid.Column="2" 
+                                                                  Text="{Binding UsageCount, StringFormat='Uses: {0}'}" 
+                                                                  FontSize="9" Foreground="DarkOrange"/>
+                                                    </Grid>
+                                                    
+                                                    <!-- Rule Action Buttons -->
+                                                    <StackPanel Grid.Row="2" Orientation="Horizontal" 
+                                                               Spacing="5" Margin="0,8,0,0" HorizontalAlignment="Center">
+                                                        
+                                                        <!-- Activate/Deactivate Button -->
+                                                        <Button FontSize="9" Padding="8,3" Foreground="White"
+                                                               Background="Green" Content="🟢 Deactivate"
+                                                               IsVisible="{Binding IsActive}"
+                                                               Command="{Binding $parent[ItemsControl].((vm:TemplateMappingViewModel)DataContext).ToggleRuleActivationCommand}"
+                                                               CommandParameter="{Binding}"
+                                                               ToolTip.Tip="Deactivate this rule"/>
+                                                        
+                                                        <Button FontSize="9" Padding="8,3" Foreground="White"
+                                                               Background="Red" Content="🔴 Activate"
+                                                               IsVisible="{Binding !IsActive}"
+                                                               Command="{Binding $parent[ItemsControl].((vm:TemplateMappingViewModel)DataContext).ToggleRuleActivationCommand}"
+                                                               CommandParameter="{Binding}"
+                                                               ToolTip.Tip="Activate this rule"/>
+                                                        
+                                                        <Button Content="🧪 Test" 
+                                                               Background="Orange" Foreground="White" 
+                                                               FontSize="9" Padding="8,3"
+                                                               Command="{Binding $parent[ItemsControl].((vm:TemplateMappingViewModel)DataContext).TestRuleCommand}"
+                                                               CommandParameter="{Binding}"
+                                                               ToolTip.Tip="Test rule with current template"/>
+                                                        
+                                                        <Button Content="🗑️" 
+                                                               Background="Red" Foreground="White" 
+                                                               FontSize="9" Padding="8,3"
+                                                               Command="{Binding $parent[ItemsControl].((vm:TemplateMappingViewModel)DataContext).DeleteRuleCommand}"
+                                                               CommandParameter="{Binding}"
+                                                               ToolTip.Tip="Delete rule permanently"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                            
+                            <!-- Rule Management Actions -->
+                            <StackPanel Orientation="Horizontal" Spacing="5" Margin="0,10,0,0" HorizontalAlignment="Center">
+                                <Button Content="🔄 Refresh Rules" 
+                                       Command="{Binding RefreshRulesCommand}"
+                                       Background="Blue" Foreground="White" FontSize="10" Padding="10,5"/>
+                                <Button Content="📊 Rule Statistics" 
+                                       Command="{Binding ViewRuleStatisticsCommand}"
+                                       Background="Green" Foreground="White" FontSize="10" Padding="10,5"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    
                     <!-- Instructions -->
                     <Border Grid.Row="3" Background="LightYellow" BorderBrush="Orange" 
-                           BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,15,0,0">
+                           BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,15,0,0"
+                           IsVisible="{Binding !IsManagingRules}">
                         <TextBlock Text="{Binding MappingInstructions}" 
                                   FontSize="11" Foreground="DarkOrange" 
                                   TextWrapping="Wrap"/>
