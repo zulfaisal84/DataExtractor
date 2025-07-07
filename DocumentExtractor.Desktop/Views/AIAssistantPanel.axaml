@@ -131,11 +131,11 @@
                                    Command="{Binding SendMessageWithParameterCommand}"
                                    CommandParameter="Explain the 54 field suggestions"/>
                             
-                            <Button Grid.Row="1" Grid.Column="1" Content="✨ New" 
+                            <Button Grid.Row="1" Grid.Column="1" Content="🌟 Workflow" 
                                    FontSize="10" Padding="6,3" Margin="1"
-                                   Background="Orange" Foreground="White"
+                                   Background="Purple" Foreground="White"
                                    Command="{Binding SendMessageWithParameterCommand}"
-                                   CommandParameter="What's new in the enhanced system?"/>
+                                   CommandParameter="Show me the complete workflow for my business"/>
                         </Grid>
                         
                         <!-- Default Actions for Other Contexts -->

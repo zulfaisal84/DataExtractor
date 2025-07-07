@@ -239,12 +239,19 @@ public partial class TemplateMappingViewModel : ViewModelBase
 
             Console.WriteLine($"📋 Template loaded successfully: {fileName}");
 
-            // Step 4: Provide AI assistance when template is loaded
+            // Step 5: Provide AI assistance when template is loaded
             _aiAssistant?.ProvideMappingAssistance(
                 CurrentTemplate?.FileName ?? fileName,
                 SelectedCellReference,
                 FieldMappings.Count,
                 DetectedPattern
+            );
+
+            // Step 5: Provide template learning guidance
+            _aiAssistant?.ProvideTemplateLearningGuidance(
+                CurrentTemplate?.FileName ?? fileName,
+                DetermineTemplateCategory(extension),
+                FieldMappings.Count
             );
         }
         catch (Exception ex)
@@ -1171,6 +1178,61 @@ public partial class TemplateMappingViewModel : ViewModelBase
     /// <summary>
     /// Load sample Excel file for testing
     /// </summary>
+    /// <summary>
+    /// Upload and process a document for conversational learning
+    /// </summary>
+    [RelayCommand]
+    private async Task UploadDocument()
+    {
+        try
+        {
+            IsProcessing = true;
+            StatusMessage = "Opening document selection...";
+
+            var files = await OpenFilePickerAsync("Select Document to Learn From", new[] {
+                "PDF files (*.pdf)",
+                "Image files (*.png;*.jpg;*.jpeg;*.tiff)",
+                "All files (*.*)"
+            });
+
+            if (files != null && files.Count > 0)
+            {
+                var filePath = files[0];
+                var fileName = Path.GetFileName(filePath);
+                
+                StatusMessage = $"Processing document: {fileName}";
+                
+                // Step 5: Provide AI assistance for document learning
+                _aiAssistant?.ProvideDocumentLearningGuidance(
+                    Path.GetExtension(fileName).ToLowerInvariant() switch
+                    {
+                        ".pdf" => "PDF Document",
+                        ".png" or ".jpg" or ".jpeg" => "Image Document", 
+                        _ => "Document"
+                    },
+                    0, // Will be updated after processing
+                    0.0 // Will be updated after processing
+                );
+
+                // TODO: Integrate with real document processor
+                StatusMessage = $"Document uploaded: {fileName} - Ready for AI learning";
+            }
+            else
+            {
+                StatusMessage = "Document selection cancelled";
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error uploading document: {ex.Message}";
+            Console.WriteLine($"❌ Error in UploadDocument: {ex.Message}");
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
     [RelayCommand]
     private async Task LoadSampleTemplate()
     {

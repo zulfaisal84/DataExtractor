@@ -310,15 +310,104 @@ public partial class GlobalAIAssistantService : ObservableObject
         if (CurrentContext != "TemplateMappingView" && CurrentContext != "Template Mapping")
             return;
 
-        var message = "🚀 **NEW in Step 4: AI Agent Integration**\n\n" +
-                     "✨ **Enhanced Features**:\n\n" +
-                     "🎯 **Smart Quick Actions**: Context-aware AI buttons\n" +
-                     "📊 **Real-time Assistance**: I guide you through mapping\n" +
-                     "🔄 **Template Intelligence**: I understand your Excel layouts\n" +
-                     "⚡ **Rule Guidance**: Advanced rule management help\n\n" +
-                     "🔧 **Try the new Quick Actions** above:\n" +
-                     "• 🗺️ Mapping • ⚙️ Rules • 🎯 Fields • ✨ New\n\n" +
-                     "💬 **I'm now smarter about template mapping!** Ask me anything!";
+        var message = "🚀 **NEW in Step 5: Template Mapping as AI Teaching Ground**\n\n" +
+                     "✨ **Revolutionary Features**:\n\n" +
+                     "🎓 **Conversational Learning**: Teach me through natural conversation\n" +
+                     "🖼️ **Visual Document Teaching**: Drag & drop screenshots to train patterns\n" +
+                     "📋 **Template Automation**: I learn your layout preferences permanently\n" +
+                     "🔄 **Complete Workflow**: From document reading to template filling\n\n" +
+                     "🎯 **How to Use the AI Teaching Ground**:\n" +
+                     "• Upload documents → I learn extraction patterns\n" +
+                     "• Map template fields → I remember layouts forever\n" +
+                     "• Create rules → Automate bulk processing\n" +
+                     "• Export results → Ready for client delivery\n\n" +
+                     "💬 **Examples you can say**:\n" +
+                     "• 'I have a TNB bill with total amount RM 245.67'\n" +
+                     "• 'Put invoice totals in cell D15 for monthly reports'\n" +
+                     "• 'Learn this Excel layout for client summaries'\n\n" +
+                     "🌟 **This is the future of document automation!**";
+
+        AddMessage("AI Assistant", message, ChatMessageType.Bot);
+    }
+
+    /// <summary>
+    /// Provide conversational document learning assistance
+    /// </summary>
+    public void ProvideDocumentLearningGuidance(string documentType, int extractedFields, double confidence)
+    {
+        if (CurrentContext != "TemplateMappingView" && CurrentContext != "Template Mapping")
+            return;
+
+        var message = $"🎓 **Document Learning Mode Activated**\n\n" +
+                     $"📄 **Document**: {documentType}\n" +
+                     $"🔍 **Fields Extracted**: {extractedFields}\n" +
+                     $"📊 **Confidence**: {confidence:P1}\n\n" +
+                     $"💬 **Teach me more**:\n" +
+                     $"• 'The total amount is RM 245.67 in the bottom right'\n" +
+                     $"• 'Account number is always after \\'Account No:\\' '\n" +
+                     $"• 'Due date format is DD/MM/YYYY'\n\n" +
+                     $"🎯 **Next Steps**:\n" +
+                     $"1. Confirm/correct my extractions\n" +
+                     $"2. Teach me any missing patterns\n" +
+                     $"3. Choose template for automatic filling\n\n" +
+                     $"💡 **Pro tip**: The more you teach me, the smarter I become!";
+
+        AddMessage("AI Assistant", message, ChatMessageType.Bot);
+    }
+
+    /// <summary>
+    /// Provide template learning workflow guidance
+    /// </summary>
+    public void ProvideTemplateLearningGuidance(string templateName, string templateType, int mappedFields)
+    {
+        if (CurrentContext != "TemplateMappingView" && CurrentContext != "Template Mapping")
+            return;
+
+        var message = $"📋 **Template Learning Mode**\n\n" +
+                     $"✅ **Template**: {templateName}\n" +
+                     $"🎨 **Type**: {templateType}\n" +
+                     $"📊 **Mapped Fields**: {mappedFields}\n\n" +
+                     $"🎯 **Conversational Template Teaching**:\n\n" +
+                     $"**Tell me what goes where:**\n" +
+                     $"• 'Put total amounts in cell D15'\n" +
+                     $"• 'Company names go in the header section'\n" +
+                     $"• 'Due dates fill the right column'\n\n" +
+                     $"**Ask me to help:**\n" +
+                     $"• 'How do I automate monthly reports?'\n" +
+                     $"• 'What template patterns do you know?'\n" +
+                     $"• 'Show me bulk processing options'\n\n" +
+                     $"🚀 **I'm learning your business workflow!**";
+
+        AddMessage("AI Assistant", message, ChatMessageType.Bot);
+    }
+
+    /// <summary>
+    /// Provide unified workflow guidance between document learning and template mapping
+    /// </summary>
+    public void ProvideUnifiedWorkflowGuidance()
+    {
+        if (CurrentContext != "TemplateMappingView" && CurrentContext != "Template Mapping")
+            return;
+
+        var message = "🌟 **Complete Document Workflow Automation**\n\n" +
+                     "🔄 **How Everything Connects**:\n\n" +
+                     "**1. Document Learning** 📖\n" +
+                     "• Upload documents (TNB bills, invoices, reports)\n" +
+                     "• I learn extraction patterns through conversation\n" +
+                     "• Patterns saved permanently for future use\n\n" +
+                     "**2. Template Mapping** 📋\n" +
+                     "• Upload your business templates (Excel, PDF, Word)\n" +
+                     "• Teach me layout through click-to-map or conversation\n" +
+                     "• Create reusable mapping rules for automation\n\n" +
+                     "**3. Automated Processing** ⚡\n" +
+                     "• Bulk process hundreds of documents\n" +
+                     "• Auto-fill templates with extracted data\n" +
+                     "• Export ready-for-delivery reports\n\n" +
+                     "💼 **Real Business Example**:\n" +
+                     "1. Upload 100 TNB bills → I extract all totals/accounts\n" +
+                     "2. Map monthly expense template → I learn cell positions\n" +
+                     "3. Auto-generate 100 filled reports → Ready for clients\n\n" +
+                     "🎯 **Try saying**: 'Show me the complete workflow for my business'";
 
         AddMessage("AI Assistant", message, ChatMessageType.Bot);
     }
@@ -387,15 +476,39 @@ public partial class GlobalAIAssistantService : ObservableObject
             case "templatemapping":
                 if (lowerMessage.Contains("help") || lowerMessage.Contains("how"))
                 {
-                    return "🗺️ **Template Mapping Advanced Help**\n\n" +
-                           "✨ **SMART WORKFLOW** (Step 4 Enhanced):\n\n" +
-                           "1️⃣ **Load Template**: Click '📂 Load Template' button\n" +
-                           "2️⃣ **Smart Field Mapping**: Use the enhanced AutoCompleteBox with 54 field suggestions\n" +
-                           "3️⃣ **Click Cells**: Click Excel cells to map data fields\n" +
-                           "4️⃣ **Rule Creation**: Check '💡 Save as reusable mapping rule' for automation\n" +
-                           "5️⃣ **Apply Rules**: Use '🎯 Apply Mapping Rules' for instant mapping\n" +
-                           "6️⃣ **Test Rules**: Use '🧪 Test' in rule management for visual previews\n\n" +
-                           "🚀 **NEW FEATURES**: Enhanced rule testing with 3-tab visual dialog!";
+                    return "🗺️ **Template Mapping as AI Teaching Ground** (Step 5)\n\n" +
+                           "🎓 **CONVERSATIONAL LEARNING WORKFLOW**:\n\n" +
+                           "**1. Document Learning** 📖\n" +
+                           "• Say: 'I have a TNB bill with total RM 245.67'\n" +
+                           "• I learn extraction patterns through conversation\n" +
+                           "• Upload documents → I extract and ask for feedback\n\n" +
+                           "**2. Template Teaching** 📋\n" +
+                           "• Say: 'Put total amounts in cell D15'\n" +
+                           "• Click cells + tell me what goes there\n" +
+                           "• I remember layouts permanently\n\n" +
+                           "**3. Complete Automation** ⚡\n" +
+                           "• Bulk process hundreds of documents\n" +
+                           "• Auto-fill templates with learned patterns\n" +
+                           "• Export ready reports for clients\n\n" +
+                           "🌟 **Revolutionary**: Teach me like a human assistant!";
+                }
+                if (lowerMessage.Contains("learn") || lowerMessage.Contains("teach") || lowerMessage.Contains("conversation"))
+                {
+                    return "🎓 **Conversational AI Learning**\n\n" +
+                           "💬 **Natural Teaching Examples**:\n\n" +
+                           "**Document Learning**:\n" +
+                           "• 'The total amount is RM 245.67 in bottom right'\n" +
+                           "• 'Account numbers are always after \"Account No:\"'\n" +
+                           "• 'TNB bills have meter readings in the middle'\n\n" +
+                           "**Template Learning**:\n" +
+                           "• 'Put company names in the header section'\n" +
+                           "• 'Total amounts go in cell D15 for monthly reports'\n" +
+                           "• 'Due dates fill column B'\n\n" +
+                           "**Workflow Questions**:\n" +
+                           "• 'How do I automate 100 TNB bills?'\n" +
+                           "• 'Show me the complete business workflow'\n" +
+                           "• 'What patterns do you know for invoices?'\n\n" +
+                           "🚀 **I learn like a human - just tell me what you see!**";
                 }
                 if (lowerMessage.Contains("excel") || lowerMessage.Contains("cell"))
                 {
@@ -513,6 +626,80 @@ public partial class GlobalAIAssistantService : ObservableObject
                    "2. Upload templates → You teach me layouts\n" +
                    "3. I automatically fill templates with extracted data\n\n" +
                    GetContextualNextStep(context, "template management");
+        }
+
+        // Step 5: Conversational Learning Patterns
+        if (lowerMessage.Contains("tnb") || lowerMessage.Contains("electricity") || lowerMessage.Contains("bill"))
+        {
+            return $"⚡ **TNB Bill Learning Mode** (Context: {context})\n\n" +
+                   "I'm learning Malaysian utility bills! Tell me more:\n\n" +
+                   "💬 **What I need to learn**:\n" +
+                   "• Where is the total amount? ('Bottom right corner')\n" +
+                   "• Account number location? ('Top left after Account No:')\n" +
+                   "• Meter reading position? ('Middle section table')\n" +
+                   "• Due date format? ('DD/MM/YYYY below amount')\n\n" +
+                   "🎯 **Example teaching**: 'The total amount RM 245.67 is in bottom right corner next to Jumlah Perlu Dibayar'\n\n" +
+                   "🚀 **Next**: Once I learn the pattern, I can process 100s of TNB bills automatically!";
+        }
+
+        if (lowerMessage.Contains("put") && (lowerMessage.Contains("cell") || lowerMessage.Contains("column") || lowerMessage.Contains("row")))
+        {
+            return $"📋 **Template Layout Learning** (Context: {context})\n\n" +
+                   "Perfect! You're teaching me template layouts. I understand:\n\n" +
+                   "🎯 **What you said**: \"{message}\"\n\n" +
+                   "💡 **I'm learning**:\n" +
+                   "• Field placement preferences\n" +
+                   "• Cell/column/row positioning\n" +
+                   "• Layout automation rules\n\n" +
+                   "📝 **To make this permanent**:\n" +
+                   "1. Click the Excel cell you mentioned\n" +
+                   "2. Select the field type from dropdown\n" +
+                   "3. Check '💡 Save as reusable mapping rule'\n\n" +
+                   "🚀 **Result**: I'll remember this layout for all similar templates!";
+        }
+
+        if (lowerMessage.Contains("amount") && (lowerMessage.Contains("rm") || lowerMessage.Contains("usd") || lowerMessage.Contains("$")))
+        {
+            return $"💰 **Currency Pattern Learning** (Context: {context})\n\n" +
+                   "Great! You mentioned a specific amount. I'm learning:\n\n" +
+                   "🔍 **What I detected**: \"{message}\"\n\n" +
+                   "📚 **Currency patterns I'm learning**:\n" +
+                   "• RM amounts (Malaysian Ringgit)\n" +
+                   "• USD amounts (US Dollars)\n" +
+                   "• Amount positioning relative to text\n" +
+                   "• Number format variations\n\n" +
+                   "🎯 **Help me learn more**:\n" +
+                   "• Where exactly do you see this amount?\n" +
+                   "• What text appears before/after it?\n" +
+                   "• Is this the total, subtotal, or tax amount?\n\n" +
+                   "💡 **I'll remember this pattern for future documents!**";
+        }
+
+        if (lowerMessage.Contains("automate") || lowerMessage.Contains("bulk") || lowerMessage.Contains("100") || lowerMessage.Contains("many"))
+        {
+            return $"⚡ **Bulk Automation Workflow** (Context: {context})\n\n" +
+                   "🚀 **You want bulk processing!** Here's how my learning enables automation:\n\n" +
+                   "**📖 Step 1: Teach Document Patterns**\n" +
+                   "• Upload 1-3 sample documents\n" +
+                   "• Tell me: 'Total amount is here', 'Account number is there'\n" +
+                   "• I learn the extraction patterns permanently\n\n" +
+                   "**📋 Step 2: Teach Template Layout**\n" +
+                   "• Upload your business template\n" +
+                   "• Say: 'Put totals in D15', 'Put accounts in B8'\n" +
+                   "• I learn the layout permanently\n\n" +
+                   "**⚡ Step 3: Automated Processing**\n" +
+                   "• Upload 100s of similar documents\n" +
+                   "• I extract data using learned patterns\n" +
+                   "• I fill templates using learned layouts\n" +
+                   "• Export ready reports for your clients\n\n" +
+                   "🎯 **Result**: 10 minutes of teaching = Hours of automation!";
+        }
+
+        if (lowerMessage.Contains("complete workflow") || lowerMessage.Contains("business workflow") || (lowerMessage.Contains("workflow") && lowerMessage.Contains("business")))
+        {
+            // Call the unified workflow guidance method
+            ProvideUnifiedWorkflowGuidance();
+            return "🔄 Complete workflow guidance provided above! Let me know which step you'd like to start with.";
         }
 
         if (lowerMessage.Contains("help") || lowerMessage.Contains("how") || lowerMessage.Contains("what"))
