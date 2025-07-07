@@ -23,6 +23,7 @@ namespace DocumentExtractor.Desktop.ViewModels;
 /// <summary>
 /// ViewModel for the Visual Template Mapping interface.
 /// Handles template preview, click-to-teach field mapping, and visual position overlay.
+/// Enhanced with AI agent integration for real-time assistance.
 /// </summary>
 public partial class TemplateMappingViewModel : ViewModelBase
 {
@@ -30,6 +31,7 @@ public partial class TemplateMappingViewModel : ViewModelBase
     private readonly ExcelDataService _excelDataService;
     private readonly HtmlTemplateService _htmlTemplateService;
     private readonly IRuleEngine _ruleEngine;
+    private readonly GlobalAIAssistantService _aiAssistant;
 
     [ObservableProperty]
     private string _statusMessage = "Ready for template mapping";
@@ -124,13 +126,14 @@ public partial class TemplateMappingViewModel : ViewModelBase
     [ObservableProperty]
     private ObservableCollection<string> _availableFieldTypes = new();
 
-    public TemplateMappingViewModel(DocumentExtractionContext context)
+    public TemplateMappingViewModel(DocumentExtractionContext context, GlobalAIAssistantService aiAssistant)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
+        _aiAssistant = aiAssistant ?? throw new ArgumentNullException(nameof(aiAssistant));
         _excelDataService = new ExcelDataService();
         _htmlTemplateService = new HtmlTemplateService();
         _ruleEngine = new RuleEngineService(context);
-        Console.WriteLine("🗺️ TemplateMappingViewModel initialized with Excel data service and rule engine");
+        Console.WriteLine("🗺️ TemplateMappingViewModel initialized with Excel data service, rule engine, and AI assistant");
     }
 
     /// <summary>
@@ -235,6 +238,14 @@ public partial class TemplateMappingViewModel : ViewModelBase
             IsMappingMode = true; // Enable mapping mode when template is loaded
 
             Console.WriteLine($"📋 Template loaded successfully: {fileName}");
+
+            // Step 4: Provide AI assistance when template is loaded
+            _aiAssistant?.ProvideMappingAssistance(
+                CurrentTemplate?.FileName ?? fileName,
+                SelectedCellReference,
+                FieldMappings.Count,
+                DetectedPattern
+            );
         }
         catch (Exception ex)
         {
@@ -883,6 +894,14 @@ public partial class TemplateMappingViewModel : ViewModelBase
             StatusMessage = $"Field mapping saved to {targetLocation}";
 
             Console.WriteLine($"💾 Field mapping saved: {mapping.FieldName} → {targetLocation}");
+
+            // Step 4: Provide AI assistance after saving field mapping
+            _aiAssistant?.ProvideMappingAssistance(
+                CurrentTemplate?.FileName ?? "Template",
+                SelectedCellReference,
+                FieldMappings.Count,
+                DetectedPattern
+            );
         }
         catch (Exception ex)
         {
@@ -1199,6 +1218,11 @@ public partial class TemplateMappingViewModel : ViewModelBase
             
             StatusMessage = $"Rule management panel open - {AvailableRules.Count} rules loaded";
             Console.WriteLine($"⚙️ Rule management opened with {AvailableRules.Count} rules");
+
+            // Step 4: Provide AI guidance for rule management
+            var activeRules = AvailableRules.Count(r => r.IsActive);
+            var successRate = AvailableRules.Any() ? AvailableRules.Average(r => r.SuccessRate) : 0.0;
+            _aiAssistant?.ProvideRuleGuidance(activeRules, AvailableRules.Count, successRate);
         }
         catch (Exception ex)
         {

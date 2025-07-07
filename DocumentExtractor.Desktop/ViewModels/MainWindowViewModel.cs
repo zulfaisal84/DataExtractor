@@ -223,8 +223,8 @@ public partial class MainWindowViewModel : ViewModelBase
             // Initialize Global AI Assistant Service
             GlobalAI = new GlobalAIAssistantService(_context);
             
-            // Initialize Template Mapping ViewModel
-            TemplateMappingViewModel = new TemplateMappingViewModel(_context);
+            // Initialize Template Mapping ViewModel with AI Assistant
+            TemplateMappingViewModel = new TemplateMappingViewModel(_context, GlobalAI);
             
             // Initialize Conversational Learning ViewModel for Document Teaching
             ConversationalLearningViewModel = new ConversationalLearningViewModel();
