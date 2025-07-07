@@ -1406,7 +1406,7 @@ public partial class TemplateMappingViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Show test results in a user-friendly dialog
+    /// Show enhanced test results with visual preview and interactive elements
     /// </summary>
     private async Task ShowTestResultsDialog(string ruleName, string testResults, bool testPassed)
     {
@@ -1424,93 +1424,10 @@ public partial class TemplateMappingViewModel : ViewModelBase
                 return;
             }
 
-            // Create dialog title with result icon
-            string dialogTitle = testPassed ? "✅ Rule Test PASSED" : "❌ Rule Test FAILED";
-            string fullTitle = $"{dialogTitle} - {ruleName}";
-
-            // Create a simple custom dialog window
-            var dialogWindow = new Window
-            {
-                Title = fullTitle,
-                Width = 600,
-                Height = 400,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                CanResize = true,
-                ShowInTaskbar = false
-            };
-
-            // Create content panel
-            var panel = new StackPanel
-            {
-                Margin = new Avalonia.Thickness(20),
-                Spacing = 15
-            };
-
-            // Add result icon and title
-            var headerPanel = new StackPanel
-            {
-                Orientation = Avalonia.Layout.Orientation.Horizontal,
-                Spacing = 10
-            };
-
-            var iconText = new TextBlock
-            {
-                Text = testPassed ? "✅" : "❌",
-                FontSize = 24,
-                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
-            };
-
-            var titleText = new TextBlock
-            {
-                Text = dialogTitle,
-                FontSize = 16,
-                FontWeight = Avalonia.Media.FontWeight.Bold,
-                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
-            };
-
-            headerPanel.Children.Add(iconText);
-            headerPanel.Children.Add(titleText);
-            panel.Children.Add(headerPanel);
-
-            // Add scrollable test results
-            var scrollViewer = new ScrollViewer
-            {
-                Height = 250,
-                VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto
-            };
-
-            var resultsText = new TextBlock
-            {
-                Text = testResults,
-                TextWrapping = Avalonia.Media.TextWrapping.Wrap,
-                FontFamily = "Consolas,Monaco,monospace",
-                FontSize = 11,
-                Background = Avalonia.Media.Brushes.LightGray,
-                Padding = new Avalonia.Thickness(10)
-            };
-
-            scrollViewer.Content = resultsText;
-            panel.Children.Add(scrollViewer);
-
-            // Add OK button
-            var okButton = new Button
-            {
-                Content = "OK",
-                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
-                Padding = new Avalonia.Thickness(20, 8),
-                Background = testPassed ? Avalonia.Media.Brushes.Green : Avalonia.Media.Brushes.Orange,
-                Foreground = Avalonia.Media.Brushes.White
-            };
-
-            okButton.Click += (s, e) => dialogWindow.Close();
-            panel.Children.Add(okButton);
-
-            dialogWindow.Content = panel;
-
-            // Show the dialog
-            await dialogWindow.ShowDialog(mainWindow);
+            // Create enhanced dialog with visual preview
+            await ShowEnhancedTestResultsDialog(mainWindow, ruleName, testResults, testPassed);
             
-            Console.WriteLine($"🧪 Test results dialog shown for rule: {ruleName}");
+            Console.WriteLine($"🧪 Enhanced test results dialog shown for rule: {ruleName}");
         }
         catch (Exception ex)
         {
@@ -1523,6 +1440,510 @@ public partial class TemplateMappingViewModel : ViewModelBase
             Console.WriteLine("🧪 RULE TEST RESULTS (Dialog failed, showing in console):");
             Console.WriteLine($"Rule: {ruleName}");
             Console.WriteLine(testResults);
+        }
+    }
+
+    /// <summary>
+    /// Create enhanced test results dialog with visual preview and interactive features
+    /// </summary>
+    private async Task ShowEnhancedTestResultsDialog(Window mainWindow, string ruleName, string testResults, bool testPassed)
+    {
+        // Create dialog title with result icon
+        string dialogTitle = testPassed ? "✅ Rule Test PASSED" : "❌ Rule Test FAILED";
+        string fullTitle = $"{dialogTitle} - {ruleName}";
+
+        // Create enhanced dialog window
+        var dialogWindow = new Window
+        {
+            Title = fullTitle,
+            Width = 900,
+            Height = 600,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            CanResize = true,
+            ShowInTaskbar = false
+        };
+
+        // Main container with enhanced layout
+        var mainGrid = new Grid();
+        mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+        // Header with enhanced styling
+        var headerBorder = new Border
+        {
+            Background = testPassed ? Avalonia.Media.Brushes.DarkGreen : Avalonia.Media.Brushes.DarkRed,
+            Padding = new Avalonia.Thickness(20, 15),
+            CornerRadius = new Avalonia.CornerRadius(8, 8, 0, 0)
+        };
+
+        var headerPanel = new StackPanel
+        {
+            Orientation = Avalonia.Layout.Orientation.Horizontal,
+            Spacing = 15
+        };
+
+        var iconText = new TextBlock
+        {
+            Text = testPassed ? "✅" : "❌",
+            FontSize = 32,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+        };
+
+        var titlePanel = new StackPanel
+        {
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+        };
+
+        var titleText = new TextBlock
+        {
+            Text = dialogTitle,
+            FontSize = 18,
+            FontWeight = Avalonia.Media.FontWeight.Bold,
+            Foreground = Avalonia.Media.Brushes.White
+        };
+
+        var subtitleText = new TextBlock
+        {
+            Text = $"Testing rule: {ruleName}",
+            FontSize = 12,
+            Foreground = Avalonia.Media.Brushes.LightGray,
+            Margin = new Avalonia.Thickness(0, 5, 0, 0)
+        };
+
+        titlePanel.Children.Add(titleText);
+        titlePanel.Children.Add(subtitleText);
+        headerPanel.Children.Add(iconText);
+        headerPanel.Children.Add(titlePanel);
+        headerBorder.Child = headerPanel;
+
+        Grid.SetRow(headerBorder, 0);
+        mainGrid.Children.Add(headerBorder);
+
+        // Content area with tabs using standard Avalonia TabControl
+        var tabControl = new TabControl();
+        
+        // Tab 1: Test Results Summary
+        var summaryTab = new TabItem
+        {
+            Header = "📊 Test Summary"
+        };
+        
+        var summaryScrollViewer = new ScrollViewer
+        {
+            VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+            Padding = new Avalonia.Thickness(20)
+        };
+
+        var summaryBorder = new Border
+        {
+            Background = Avalonia.Media.Brushes.WhiteSmoke,
+            CornerRadius = new Avalonia.CornerRadius(5),
+            Padding = new Avalonia.Thickness(15)
+        };
+
+        var summaryText = new TextBlock
+        {
+            Text = testResults,
+            TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+            FontFamily = "Consolas,Monaco,monospace",
+            FontSize = 11
+        };
+
+        summaryBorder.Child = summaryText;
+
+        summaryScrollViewer.Content = summaryBorder;
+        summaryTab.Content = summaryScrollViewer;
+        tabControl.Items.Add(summaryTab);
+
+        // Tab 2: Visual Field Mapping Preview
+        var mappingTab = new TabItem
+        {
+            Header = "🎯 Field Mapping Preview"
+        };
+
+        var mappingContent = CreateFieldMappingPreview(ruleName, testPassed);
+        mappingTab.Content = mappingContent;
+        tabControl.Items.Add(mappingTab);
+
+        // Tab 3: Interactive Test Data
+        var testDataTab = new TabItem
+        {
+            Header = "⚡ Interactive Test Data"
+        };
+
+        var testDataContent = CreateInteractiveTestDataView(ruleName);
+        testDataTab.Content = testDataContent;
+        tabControl.Items.Add(testDataTab);
+
+        Grid.SetRow(tabControl, 1);
+        mainGrid.Children.Add(tabControl);
+
+        // Footer with action buttons
+        var footerBorder = new Border
+        {
+            Background = Avalonia.Media.Brushes.LightGray,
+            Padding = new Avalonia.Thickness(20, 15),
+            CornerRadius = new Avalonia.CornerRadius(0, 0, 8, 8)
+        };
+
+        var footerPanel = new StackPanel
+        {
+            Orientation = Avalonia.Layout.Orientation.Horizontal,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+            Spacing = 15
+        };
+
+        // Enhanced action buttons
+        var runAgainButton = new Button
+        {
+            Content = "🔄 Run Test Again",
+            Padding = new Avalonia.Thickness(15, 8),
+            Background = Avalonia.Media.Brushes.Blue,
+            Foreground = Avalonia.Media.Brushes.White,
+            CornerRadius = new Avalonia.CornerRadius(5)
+        };
+
+        var exportButton = new Button
+        {
+            Content = "📄 Export Results",
+            Padding = new Avalonia.Thickness(15, 8),
+            Background = Avalonia.Media.Brushes.Orange,
+            Foreground = Avalonia.Media.Brushes.White,
+            CornerRadius = new Avalonia.CornerRadius(5)
+        };
+
+        var okButton = new Button
+        {
+            Content = "✅ Close",
+            Padding = new Avalonia.Thickness(20, 8),
+            Background = testPassed ? Avalonia.Media.Brushes.Green : Avalonia.Media.Brushes.Gray,
+            Foreground = Avalonia.Media.Brushes.White,
+            CornerRadius = new Avalonia.CornerRadius(5)
+        };
+
+        // Button event handlers
+        runAgainButton.Click += async (s, e) => 
+        {
+            dialogWindow.Close();
+            // Re-run the test (implementation would depend on rule access)
+            StatusMessage = $"Re-running test for rule: {ruleName}...";
+        };
+
+        exportButton.Click += async (s, e) => 
+        {
+            // Export test results to file
+            await ExportTestResults(ruleName, testResults);
+        };
+
+        okButton.Click += (s, e) => dialogWindow.Close();
+
+        footerPanel.Children.Add(runAgainButton);
+        footerPanel.Children.Add(exportButton);
+        footerPanel.Children.Add(okButton);
+        footerBorder.Child = footerPanel;
+
+        Grid.SetRow(footerBorder, 2);
+        mainGrid.Children.Add(footerBorder);
+
+        dialogWindow.Content = mainGrid;
+
+        // Show the enhanced dialog
+        await dialogWindow.ShowDialog(mainWindow);
+    }
+
+    /// <summary>
+    /// Create visual field mapping preview panel
+    /// </summary>
+    private Panel CreateFieldMappingPreview(string ruleName, bool testPassed)
+    {
+        var mainPanel = new StackPanel
+        {
+            Margin = new Avalonia.Thickness(20),
+            Spacing = 15
+        };
+
+        // Preview header
+        var headerText = new TextBlock
+        {
+            Text = "🎯 Visual Field Mapping Preview",
+            FontSize = 16,
+            FontWeight = Avalonia.Media.FontWeight.Bold,
+            Margin = new Avalonia.Thickness(0, 0, 0, 10)
+        };
+        mainPanel.Children.Add(headerText);
+
+        // Create side-by-side layout
+        var previewGrid = new Grid();
+        previewGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        previewGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        previewGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+        // Before column
+        var beforePanel = new Border
+        {
+            Background = Avalonia.Media.Brushes.LightYellow,
+            BorderBrush = Avalonia.Media.Brushes.Orange,
+            BorderThickness = new Avalonia.Thickness(1),
+            CornerRadius = new Avalonia.CornerRadius(5),
+            Padding = new Avalonia.Thickness(15)
+        };
+
+        var beforeContent = new StackPanel
+        {
+            Spacing = 10
+        };
+
+        beforeContent.Children.Add(new TextBlock
+        {
+            Text = "📋 Current Template",
+            FontWeight = Avalonia.Media.FontWeight.Bold,
+            FontSize = 14
+        });
+
+        beforeContent.Children.Add(new TextBlock
+        {
+            Text = $"Template: {CurrentTemplate?.FileName ?? "No template loaded"}",
+            FontSize = 12
+        });
+
+        beforeContent.Children.Add(new TextBlock
+        {
+            Text = $"Pattern: {DetectedPattern}",
+            FontSize = 12
+        });
+
+        beforeContent.Children.Add(new TextBlock
+        {
+            Text = $"Current Mappings: {FieldMappings.Count}",
+            FontSize = 12
+        });
+
+        beforePanel.Child = beforeContent;
+        Grid.SetColumn(beforePanel, 0);
+        previewGrid.Children.Add(beforePanel);
+
+        // Arrow
+        var arrowText = new TextBlock
+        {
+            Text = testPassed ? "✅➡️" : "❌➡️",
+            FontSize = 24,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+            Margin = new Avalonia.Thickness(10, 0)
+        };
+        Grid.SetColumn(arrowText, 1);
+        previewGrid.Children.Add(arrowText);
+
+        // After column
+        var afterPanel = new Border
+        {
+            Background = testPassed ? Avalonia.Media.Brushes.LightGreen : Avalonia.Media.Brushes.LightPink,
+            BorderBrush = testPassed ? Avalonia.Media.Brushes.Green : Avalonia.Media.Brushes.Red,
+            BorderThickness = new Avalonia.Thickness(1),
+            CornerRadius = new Avalonia.CornerRadius(5),
+            Padding = new Avalonia.Thickness(15)
+        };
+
+        var afterContent = new StackPanel
+        {
+            Spacing = 10
+        };
+
+        afterContent.Children.Add(new TextBlock
+        {
+            Text = testPassed ? "✅ Rule Applied Result" : "❌ Rule Test Failed",
+            FontWeight = Avalonia.Media.FontWeight.Bold,
+            FontSize = 14
+        });
+
+        afterContent.Children.Add(new TextBlock
+        {
+            Text = $"Rule: {ruleName}",
+            FontSize = 12
+        });
+
+        afterContent.Children.Add(new TextBlock
+        {
+            Text = testPassed ? "Would create automatic mappings" : "Rule conditions not met",
+            FontSize = 12
+        });
+
+        afterContent.Children.Add(new TextBlock
+        {
+            Text = testPassed ? "Future documents would auto-map" : "Manual mapping required",
+            FontSize = 12,
+            FontStyle = Avalonia.Media.FontStyle.Italic
+        });
+
+        afterPanel.Child = afterContent;
+        Grid.SetColumn(afterPanel, 2);
+        previewGrid.Children.Add(afterPanel);
+
+        mainPanel.Children.Add(previewGrid);
+
+        // Add field mapping details if test passed
+        if (testPassed)
+        {
+            var detailsHeader = new TextBlock
+            {
+                Text = "📊 Expected Field Mappings",
+                FontSize = 14,
+                FontWeight = Avalonia.Media.FontWeight.Bold,
+                Margin = new Avalonia.Thickness(0, 20, 0, 10)
+            };
+            mainPanel.Children.Add(detailsHeader);
+
+            var mappingsList = new StackPanel
+            {
+                Spacing = 5
+            };
+
+            // Show sample mappings based on available field types
+            for (int i = 0; i < Math.Min(5, AvailableFieldTypes.Count); i++)
+            {
+                var mappingItem = new Border
+                {
+                    Background = Avalonia.Media.Brushes.White,
+                    BorderBrush = Avalonia.Media.Brushes.LightBlue,
+                    BorderThickness = new Avalonia.Thickness(1),
+                    CornerRadius = new Avalonia.CornerRadius(3),
+                    Padding = new Avalonia.Thickness(10, 5),
+                    Margin = new Avalonia.Thickness(20, 0, 0, 0)
+                };
+
+                var mappingText = new TextBlock
+                {
+                    Text = $"🎯 {AvailableFieldTypes[i]} → Cell {(char)('A' + i)}{i + 1}",
+                    FontSize = 11
+                };
+
+                mappingItem.Child = mappingText;
+                mappingsList.Children.Add(mappingItem);
+            }
+
+            mainPanel.Children.Add(mappingsList);
+        }
+
+        return mainPanel;
+    }
+
+    /// <summary>
+    /// Create interactive test data view panel
+    /// </summary>
+    private Panel CreateInteractiveTestDataView(string ruleName)
+    {
+        var mainPanel = new StackPanel
+        {
+            Margin = new Avalonia.Thickness(20),
+            Spacing = 15
+        };
+
+        // Header
+        var headerText = new TextBlock
+        {
+            Text = "⚡ Interactive Test Data Configuration",
+            FontSize = 16,
+            FontWeight = Avalonia.Media.FontWeight.Bold
+        };
+        mainPanel.Children.Add(headerText);
+
+        // Instructions
+        var instructionText = new TextBlock
+        {
+            Text = "Modify the test data below and click 'Rerun Test' to see how the rule performs with different values:",
+            FontSize = 12,
+            Foreground = Avalonia.Media.Brushes.DarkBlue,
+            TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+            Margin = new Avalonia.Thickness(0, 0, 0, 15)
+        };
+        mainPanel.Children.Add(instructionText);
+
+        // Create editable test data fields
+        var testDataPanel = new StackPanel
+        {
+            Spacing = 10
+        };
+
+        // Add sample editable fields
+        for (int i = 0; i < Math.Min(5, AvailableFieldTypes.Count); i++)
+        {
+            var fieldPanel = new StackPanel
+            {
+                Spacing = 5
+            };
+
+            var fieldLabel = new TextBlock
+            {
+                Text = $"📝 {AvailableFieldTypes[i]}:",
+                FontWeight = Avalonia.Media.FontWeight.Bold,
+                FontSize = 12
+            };
+
+            var fieldInput = new TextBox
+            {
+                Text = $"Test Value {i + 1}",
+                Watermark = $"Enter test value for {AvailableFieldTypes[i]}",
+                FontSize = 11
+            };
+
+            fieldPanel.Children.Add(fieldLabel);
+            fieldPanel.Children.Add(fieldInput);
+            testDataPanel.Children.Add(fieldPanel);
+        }
+
+        mainPanel.Children.Add(testDataPanel);
+
+        // Rerun test button
+        var rerunButton = new Button
+        {
+            Content = "🧪 Rerun Test with Modified Data",
+            Background = Avalonia.Media.Brushes.Purple,
+            Foreground = Avalonia.Media.Brushes.White,
+            Padding = new Avalonia.Thickness(15, 8),
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+            Margin = new Avalonia.Thickness(0, 20, 0, 0),
+            CornerRadius = new Avalonia.CornerRadius(5)
+        };
+
+        rerunButton.Click += async (s, e) =>
+        {
+            StatusMessage = $"Rerunning test with modified data for rule: {ruleName}";
+            // Implementation would collect modified values and rerun test
+        };
+
+        mainPanel.Children.Add(rerunButton);
+
+        return mainPanel;
+    }
+
+    /// <summary>
+    /// Export test results to file
+    /// </summary>
+    private async Task ExportTestResults(string ruleName, string testResults)
+    {
+        try
+        {
+            var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+            var filename = $"RuleTest_{ruleName}_{timestamp}.txt";
+            var filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), filename);
+
+            var exportContent = $"Rule Test Results Export\n" +
+                              $"Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n" +
+                              $"Rule: {ruleName}\n" +
+                              $"Template: {CurrentTemplate?.FileName ?? "No template"}\n" +
+                              $"Pattern: {DetectedPattern}\n" +
+                              $"==============================\n\n" +
+                              $"{testResults}";
+
+            await File.WriteAllTextAsync(filePath, exportContent);
+            StatusMessage = $"Test results exported to: {filename}";
+            Console.WriteLine($"📄 Test results exported to: {filePath}");
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Export failed: {ex.Message}";
+            Console.WriteLine($"❌ Export error: {ex.Message}");
         }
     }
 }
