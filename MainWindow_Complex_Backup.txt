@@ -1,0 +1,329 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:DocumentExtractor.Desktop.ViewModels"
+        xmlns:views="using:DocumentExtractor.Desktop.Views"
+        x:Class="DocumentExtractor.Desktop.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="🤖 Document Intelligence with AI Learning"
+        Width="1200" Height="800"
+        MinWidth="1000" MinHeight="700"
+        WindowStartupLocation="CenterScreen"
+        Background="WhiteSmoke"
+        CanResize="True"
+        ShowInTaskbar="True"
+        WindowState="Normal"
+        ExtendClientAreaToDecorationsHint="False">
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        
+        <!-- Header -->
+        <Border Grid.Row="0" Grid.ColumnSpan="2" Background="DarkBlue" CornerRadius="10,10,0,0" Padding="20" Margin="0,0,0,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <StackPanel Grid.Column="0" HorizontalAlignment="Left">
+                    <TextBlock Text="🤖 Document Intelligence with AI Learning" 
+                              FontSize="24" FontWeight="Bold" 
+                              Foreground="White"/>
+                    <TextBlock Text="Conversational document processing • Extract data • Fill templates • Learn handwriting" 
+                              FontSize="12" Foreground="LightBlue" Margin="0,5,0,0"/>
+                </StackPanel>
+                
+                <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                    <TextBlock Text="{Binding CurrentTime}" FontSize="14" Foreground="LightBlue"/>
+                    <TextBlock Text="{Binding DatabaseStatus}" FontSize="12" Foreground="White"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+        
+        <!-- New Simple Single-Tab Interface -->
+        <views:MainView Grid.Row="1" Grid.ColumnSpan="2"/>
+            
+            <!-- Document Teaching Tab -->
+            <TabItem Header="🎓 Document Teaching" FontSize="14" FontWeight="Bold">
+                <views:DocumentTeachingView DataContext="{Binding ConversationalLearningViewModel}"/>
+            </TabItem>
+            
+            <!-- Template Mapping Tab -->
+            <TabItem Header="🗺️ Template Mapping" FontSize="14" FontWeight="Bold">
+                <views:TemplateMappingView Margin="5" DataContext="{Binding TemplateMappingViewModel}"/>
+            </TabItem>
+            
+            <!-- Dashboard Tab -->
+            <TabItem Header="📊 Dashboard" FontSize="14" FontWeight="Bold">
+                <ScrollViewer Padding="20">
+                    <StackPanel>
+                        <!-- Statistics Cards -->
+                        <Grid Margin="0,0,0,20">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <Border Grid.Column="0" Background="LightBlue" CornerRadius="10" Padding="15" Margin="5">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Text="📄" FontSize="24" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding TotalDocuments}" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="Documents" FontSize="12" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                            
+                            <Border Grid.Column="1" Background="LightGreen" CornerRadius="10" Padding="15" Margin="5">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Text="🧠" FontSize="24" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding LearnedPatterns}" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="Patterns" FontSize="12" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                            
+                            <Border Grid.Column="2" Background="LightCyan" CornerRadius="10" Padding="15" Margin="5">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Text="📈" FontSize="24" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding PatternSuccessRate}" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="Success Rate" FontSize="12" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                            
+                            <Border Grid.Column="3" Background="LightPink" CornerRadius="10" Padding="15" Margin="5">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Text="⚡" FontSize="24" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding StatusMessage}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="Status" FontSize="12" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                        
+                        <!-- Action Buttons -->
+                        <Grid Margin="0,0,0,20">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <Button Grid.Column="0" Content="📤 Upload Documents" 
+                                   Command="{Binding UploadDocumentsCommand}"
+                                   Background="DarkBlue" Foreground="White"
+                                   Padding="15,10" Margin="5" FontSize="14"/>
+                            
+                            <Button Grid.Column="1" Content="📋 View Documents" 
+                                   Command="{Binding ViewDocumentsCommand}"
+                                   Background="Green" Foreground="White"
+                                   Padding="15,10" Margin="5" FontSize="14"/>
+                            
+                            <Button Grid.Column="2" Content="🧠 Manage Patterns" 
+                                   Command="{Binding ManagePatternsCommand}"
+                                   Background="Purple" Foreground="White"
+                                   Padding="15,10" Margin="5" FontSize="14"/>
+                            
+                            <Button Grid.Column="3" Content="📊 Export Excel" 
+                                   Command="{Binding ExportExcelCommand}"
+                                   Background="Orange" Foreground="White"
+                                   Padding="15,10" Margin="5" FontSize="14"/>
+                        </Grid>
+                        
+                        <!-- Recent Activity -->
+                        <Border Background="White" CornerRadius="10" Padding="20" 
+                               BorderBrush="LightGray" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="📝 Recent Activity" 
+                                          FontSize="18" FontWeight="Bold" 
+                                          Margin="0,0,0,15"/>
+                                <TextBlock Text="{Binding RecentActivity}" 
+                                          FontSize="14" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
+            <!-- Document List Tab -->
+            <TabItem Header="📋 Documents" FontSize="14" FontWeight="Bold">
+                <Grid Margin="20">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <TextBlock Grid.Row="0" Text="📄 Document Library" 
+                              FontSize="20" FontWeight="Bold" 
+                              Margin="0,0,0,15"/>
+                    
+                    <DataGrid Grid.Row="1" 
+                             ItemsSource="{Binding Documents}"
+                             AutoGenerateColumns="False"
+                             IsReadOnly="True"
+                             GridLinesVisibility="All"
+                             BorderBrush="LightGray"
+                             BorderThickness="1">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Document Name" Binding="{Binding FileName}" Width="*"/>
+                            <DataGridTextColumn Header="Type" Binding="{Binding DocumentType}" Width="100"/>
+                            <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100"/>
+                            <DataGridTextColumn Header="Processed Date" Binding="{Binding ProcessedDate, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" Width="150"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+            
+            <!-- Template Management Tab -->
+            <TabItem Header="📋 Templates" FontSize="14" FontWeight="Bold">
+                <Grid Margin="20">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- Header -->
+                    <TextBlock Grid.Row="0" Text="📋 Template Library" 
+                              FontSize="20" FontWeight="Bold" 
+                              Margin="0,0,0,15"/>
+                    
+                    <!-- Template Management Actions -->
+                    <Grid Grid.Row="1" Margin="0,0,0,20">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <TextBlock Grid.Column="0" Text="Manage your templates for automated data filling" 
+                                  FontSize="14" VerticalAlignment="Center" 
+                                  Foreground="Gray"/>
+                        
+                        <Button Grid.Column="1" Content="📤 Upload Template" 
+                               Background="Purple" Foreground="White"
+                               Padding="15,8" Margin="10,0" FontSize="14"/>
+                        
+                        <Button Grid.Column="2" Content="🎨 Design Template" 
+                               Background="Blue" Foreground="White"
+                               Padding="15,8" Margin="5,0" FontSize="14"/>
+                        
+                        <Button Grid.Column="3" Content="📊 Template Stats" 
+                               Background="Green" Foreground="White"
+                               Padding="15,8" FontSize="14"/>
+                    </Grid>
+                    
+                    <!-- Template Library -->
+                    <ScrollViewer Grid.Row="2">
+                        <StackPanel>
+                            <!-- Template Categories -->
+                            <Border Background="LightBlue" CornerRadius="10" Padding="20" Margin="0,0,0,15">
+                                <StackPanel>
+                                    <TextBlock Text="📁 Template Categories" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+                                    
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <Border Grid.Column="0" Background="White" CornerRadius="5" Padding="15" Margin="5">
+                                            <StackPanel>
+                                                <TextBlock Text="📊 Monthly Reports" FontWeight="Bold" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="0 templates" FontSize="12" HorizontalAlignment="Center" Foreground="Gray"/>
+                                            </StackPanel>
+                                        </Border>
+                                        
+                                        <Border Grid.Column="1" Background="White" CornerRadius="5" Padding="15" Margin="5">
+                                            <StackPanel>
+                                                <TextBlock Text="📈 Quarterly Reports" FontWeight="Bold" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="0 templates" FontSize="12" HorizontalAlignment="Center" Foreground="Gray"/>
+                                            </StackPanel>
+                                        </Border>
+                                        
+                                        <Border Grid.Column="2" Background="White" CornerRadius="5" Padding="15" Margin="5">
+                                            <StackPanel>
+                                                <TextBlock Text="👤 Client Reports" FontWeight="Bold" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="0 templates" FontSize="12" HorizontalAlignment="Center" Foreground="Gray"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                            
+                            <!-- Recent Templates -->
+                            <Border Background="White" CornerRadius="10" Padding="20" 
+                                   BorderBrush="LightGray" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="🕒 Recent Templates" FontSize="16" FontWeight="Bold" Margin="0,0,0,15"/>
+                                    
+                                    <Border Background="LightGray" CornerRadius="5" Padding="20">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="📋" FontSize="48" HorizontalAlignment="Center" Foreground="Gray"/>
+                                            <TextBlock Text="No templates uploaded yet" FontSize="16" HorizontalAlignment="Center" Margin="0,10,0,5"/>
+                                            <TextBlock Text="Upload your first template using the AI Learning tab or the Upload Template button above" 
+                                                      FontSize="12" HorizontalAlignment="Center" Foreground="Gray" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </TabItem>
+        </TabControl>
+        
+        <!-- AI Assistant Panel -->
+        <views:AIAssistantPanel Grid.Row="1" Grid.Column="1" DataContext="{Binding GlobalAI}"/>
+        
+        <!-- Footer Status Bar -->
+        <Border Grid.Row="2" Grid.ColumnSpan="2" Background="DarkGray" CornerRadius="0,0,10,10" Padding="15">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <TextBlock Text="💡 AI Learning Assistant ready to help with document processing" 
+                              FontSize="12" VerticalAlignment="Center" 
+                              Foreground="White" Margin="0,0,10,0"/>
+                    <TextBlock Text="{Binding RecentActivity}" 
+                              FontSize="10" VerticalAlignment="Center" 
+                              Foreground="LightGray"/>
+                </StackPanel>
+                
+                <Button Grid.Column="1" Content="⚙️ Settings" 
+                       Command="{Binding OpenSettingsCommand}"
+                       Background="Gray" Foreground="White"
+                       Margin="10,0" Padding="10,5" FontSize="12"/>
+                
+                <Button Grid.Column="2" Content="🪟 Minimize" 
+                       Background="Orange" Foreground="White"
+                       Margin="5,0" Padding="10,5" FontSize="12"
+                       Click="MinimizeWindow"/>
+                
+                <Button Grid.Column="3" Content="❌ Exit" 
+                       Background="Red" Foreground="White"
+                       Padding="10,5" FontSize="12"
+                       Click="CloseApplication"/>
+            </Grid>
+        </Border>
+    </Grid>
+
+</Window>

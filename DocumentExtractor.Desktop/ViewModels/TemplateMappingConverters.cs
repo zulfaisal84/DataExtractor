@@ -2,6 +2,8 @@ using System;
 using System.Globalization;
 using Avalonia.Data.Converters;
 using Avalonia.Media;
+using Avalonia.Layout;
+using Avalonia;
 using CommunityToolkit.Mvvm.Input;
 
 namespace DocumentExtractor.Desktop.ViewModels;
@@ -128,6 +130,50 @@ public class BoolToStatusColorConverter : IValueConverter
             return isTemplateLoaded ? Brushes.Green : Brushes.Red;
         }
         return Brushes.Red;
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Converter for chat message background color
+/// </summary>
+public class BoolToBackgroundConverter : IValueConverter
+{
+    public static readonly BoolToBackgroundConverter Instance = new();
+
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is bool isFromUser)
+        {
+            return isFromUser ? Brushes.LightBlue : Brushes.White;
+        }
+        return Brushes.White;
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Converter for chat message alignment
+/// </summary>
+public class BoolToAlignmentConverter : IValueConverter
+{
+    public static readonly BoolToAlignmentConverter Instance = new();
+
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is bool isFromUser)
+        {
+            return isFromUser ? HorizontalAlignment.Right : HorizontalAlignment.Left;
+        }
+        return HorizontalAlignment.Left;
     }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

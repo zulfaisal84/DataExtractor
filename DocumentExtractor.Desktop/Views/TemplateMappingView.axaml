@@ -28,16 +28,11 @@
                     <TextBlock Text="🎓 AI Teaching Ground - Template Mapping" 
                               FontSize="20" FontWeight="Bold" 
                               Foreground="White"/>
-                    <TextBlock Text="Upload documents to teach AI • Load templates for field mapping • Conversational automation learning" 
+                    <TextBlock Text="Load Excel templates for visual field mapping • Strategic rule creation • Automated pattern learning" 
                               FontSize="12" Foreground="LightBlue" Margin="0,3,0,0"/>
                 </StackPanel>
                 
                 <StackPanel Grid.Column="1" HorizontalAlignment="Right" Orientation="Horizontal" Spacing="10">
-                    <Button Content="📄 Upload Document" 
-                            Command="{Binding UploadDocumentCommand}"
-                            Background="DarkOrange" Foreground="White"
-                            Padding="10,5" CornerRadius="5"
-                            ToolTip.Tip="Upload document to teach AI extraction patterns"/>
                     <Button Content="📂 Load Template" 
                             Command="{Binding LoadTemplateCommand}"
                             Background="ForestGreen" Foreground="White"
@@ -159,16 +154,15 @@
                               FontSize="16" FontWeight="Bold" Margin="0,0,0,15"/>
                     
                     <!-- Field Input Section -->
-                    <StackPanel Grid.Row="1" Spacing="10" Margin="0,0,0,15">
-                        <TextBlock Text="Smart Field Mapping:" FontWeight="Bold"/>
+                    <StackPanel Grid.Row="1" Spacing="8" Margin="0,0,0,10">
                         
-                        <!-- Pattern Detection Display -->
-                        <Border Background="LightBlue" BorderBrush="Blue" BorderThickness="1" 
-                               CornerRadius="3" Padding="8" Margin="0,0,0,5">
+                        <!-- Pattern Detection Display (more prominent) -->
+                        <Border Background="LightBlue" BorderBrush="Blue" BorderThickness="2" 
+                               CornerRadius="5" Padding="10" Margin="0,0,0,8">
                             <StackPanel>
-                                <TextBlock Text="📊 Template Pattern:" FontSize="10" FontWeight="Bold"/>
+                                <TextBlock Text="📊 Detected Pattern" FontSize="12" FontWeight="Bold"/>
                                 <TextBlock Text="{Binding DetectedPattern}" FontSize="11" 
-                                          FontWeight="Bold" Foreground="DarkBlue"/>
+                                          FontWeight="Bold" Foreground="DarkBlue" Margin="0,2,0,0"/>
                             </StackPanel>
                         </Border>
                         
@@ -190,26 +184,29 @@
                                  IsEnabled="{Binding IsMappingMode}"
                                  FontSize="11"/>
                         
+                        <!-- Primary Action -->
                         <Button Content="💾 Save Field Mapping" 
                                Command="{Binding SaveFieldMappingCommand}"
                                Background="DarkGreen" Foreground="White"
                                IsEnabled="{Binding IsMappingMode}" 
-                               HorizontalAlignment="Stretch"/>
-                        
-                        <Button Content="🎯 Apply Mapping Rules" 
-                               Command="{Binding ApplyMappingRulesCommand}"
-                               Background="DarkBlue" Foreground="White"
-                               IsEnabled="{Binding IsTemplateLoaded}" 
                                HorizontalAlignment="Stretch"
-                               Margin="0,5,0,0"
-                               ToolTip.Tip="Automatically apply existing mapping rules to this template"/>
+                               FontWeight="Bold" Height="35"/>
                         
-                        <Button Content="⚙️ Manage Rules" 
-                               Command="{Binding ManageRulesCommand}"
-                               Background="Purple" Foreground="White"
-                               HorizontalAlignment="Stretch"
-                               Margin="0,5,0,0"
-                               ToolTip.Tip="View, activate, deactivate, and test mapping rules"/>
+                        <!-- Rule Actions Group -->
+                        <StackPanel Orientation="Horizontal" Spacing="5" Margin="0,8,0,0">
+                            <Button Content="🎯 Apply Rules" 
+                                   Command="{Binding ApplyMappingRulesCommand}"
+                                   Background="DarkBlue" Foreground="White"
+                                   IsEnabled="{Binding IsTemplateLoaded}" 
+                                   FontSize="11" Padding="8,5"
+                                   ToolTip.Tip="Apply existing mapping rules"/>
+                            
+                            <Button Content="⚙️ Manage" 
+                                   Command="{Binding ManageRulesCommand}"
+                                   Background="Purple" Foreground="White"
+                                   FontSize="11" Padding="8,5"
+                                   ToolTip.Tip="Manage mapping rules"/>
+                        </StackPanel>
                     </StackPanel>
                     
                     <!-- Existing Mappings List -->
@@ -371,14 +368,7 @@
                         </StackPanel>
                     </Border>
                     
-                    <!-- Instructions -->
-                    <Border Grid.Row="3" Background="LightYellow" BorderBrush="Orange" 
-                           BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,15,0,0"
-                           IsVisible="{Binding !IsManagingRules}">
-                        <TextBlock Text="{Binding MappingInstructions}" 
-                                  FontSize="11" Foreground="DarkOrange" 
-                                  TextWrapping="Wrap"/>
-                    </Border>
+                    <!-- Instructions removed to unblock the Excel preview -->
                 </Grid>
             </Border>
         </Grid>

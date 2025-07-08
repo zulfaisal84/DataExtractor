@@ -58,6 +58,12 @@ public class ChatMessage
     /// Session ID this message belongs to (for conversation tracking).
     /// </summary>
     public string? SessionId { get; set; }
+
+    /// <summary>
+    /// Whether this message is from the user (true) or AI/system (false).
+    /// Used for UI alignment and styling.
+    /// </summary>
+    public bool IsFromUser => Type == ChatMessageType.User;
 }
 
 /// <summary>
