@@ -11,6 +11,16 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// -----------------------------------------------------------------
+// 1. Ensure required secrets are present (JWT signing key)
+// -----------------------------------------------------------------
+if (string.IsNullOrEmpty(builder.Configuration["Jwt:Key"]))
+    throw new InvalidOperationException("JWT signing key missing – supply via environment variable JWT__KEY or user-secrets.");
+
+// Optionally log warning for missing Stripe configuration
+if (string.IsNullOrEmpty(builder.Configuration["Stripe:WebhookSecret"]))
+    Console.WriteLine("⚠️  Stripe webhook secret not configured – webhooks will be rejected.");
+
 // Shared SQLite database location (both app data & identity tables)
 var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 var appFolder = Path.Combine(appDataPath, "DocumentExtractor");
@@ -122,6 +132,10 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication(); // handles both cookie & JWT schemes
 app.UseMiddleware<DocumentExtractor.Web.Middleware.SubscriptionEnforcementMiddleware>();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseMiddleware<DocumentExtractor.Web.Middleware.SecurityHeadersMiddleware>();
+}
 app.UseAuthorization();
 
 // Ensure database is created and display startup information
