@@ -5,6 +5,9 @@ using Microsoft.EntityFrameworkCore;
 using DocumentExtractor.Web.Data;
 using DocumentExtractor.Web.Models;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -72,6 +75,24 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 }).AddEntityFrameworkStores<ApplicationDbContext>()
   .AddDefaultTokenProviders();
 
+// Configure JWT authentication for API / desktop-client usage
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "SuperSecretDevelopmentKey!123";
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+    };
+});
+
 // Register OCR and document processing services
 builder.Services.AddScoped<ITextExtractor, TesseractTextExtractor>();
 builder.Services.AddScoped<DocumentUploadService>();
@@ -99,7 +120,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseStaticFiles();
 app.UseRouting();
-app.UseAuthentication();
+app.UseAuthentication(); // handles both cookie & JWT schemes
 app.UseAuthorization();
 
 // Ensure database is created and display startup information

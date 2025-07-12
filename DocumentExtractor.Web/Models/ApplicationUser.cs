@@ -9,4 +9,5 @@ namespace DocumentExtractor.Web.Models;
 public class ApplicationUser : IdentityUser
 {
     // Additional custom properties can be added here (e.g., SubscriptionStatus)
+    public SubscriptionStatus SubscriptionStatus { get; set; } = SubscriptionStatus.Trial;
 }
