@@ -111,6 +111,39 @@ using (var scope = app.Services.CreateScope())
     // Apply Identity migrations / create tables
     var identityContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     identityContext.Database.Migrate();
+
+    // Seed default administrator account
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+    const string adminRole = "Admin";
+    const string adminEmail = "admin@example.com";
+    const string adminPassword = "P@ssw0rd!";
+
+    // Ensure Roles
+    if (!roleManager.RoleExistsAsync(adminRole).Result)
+    {
+        roleManager.CreateAsync(new IdentityRole(adminRole)).Wait();
+    }
+
+    // Ensure Admin User
+    var adminUser = userManager.FindByEmailAsync(adminEmail).Result;
+    if (adminUser == null)
+    {
+        adminUser = new ApplicationUser
+        {
+            UserName = adminEmail,
+            Email = adminEmail,
+            EmailConfirmed = true
+        };
+        userManager.CreateAsync(adminUser, adminPassword).Wait();
+    }
+
+    // Assign Role
+    if (!userManager.IsInRoleAsync(adminUser, adminRole).Result)
+    {
+        userManager.AddToRoleAsync(adminUser, adminRole).Wait();
+    }
     
     // Display startup information
     Console.WriteLine("🚀 Document Intelligence Web Application Starting...");
