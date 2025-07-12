@@ -2,8 +2,17 @@ using DocumentExtractor.Data.Context;
 using DocumentExtractor.Core.Interfaces;
 using DocumentExtractor.Services;
 using Microsoft.EntityFrameworkCore;
+using DocumentExtractor.Web.Data;
+using DocumentExtractor.Web.Models;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Shared SQLite database location (both app data & identity tables)
+var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+var appFolder = Path.Combine(appDataPath, "DocumentExtractor");
+Directory.CreateDirectory(appFolder);
+var dbPath = Path.Combine(appFolder, "document_extraction.db");
 
 // Configure Kestrel to bind to IPv4 localhost for macOS compatibility
 builder.WebHost.ConfigureKestrel(options =>
@@ -19,6 +28,7 @@ builder.WebHost.ConfigureKestrel(options =>
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddRazorPages();
 
 // Add CORS policy for local development
 builder.Services.AddCors(options =>
@@ -32,15 +42,9 @@ builder.Services.AddCors(options =>
         });
 });
 
-// Add Entity Framework Core with SQLite
+// Add Entity Framework Core with SQLite for application data
 builder.Services.AddDbContext<DocumentExtractionContext>(options =>
 {
-    // Use the same database path as the console application
-    var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-    var appFolder = Path.Combine(appDataPath, "DocumentExtractor");
-    Directory.CreateDirectory(appFolder);
-    var dbPath = Path.Combine(appFolder, "document_extraction.db");
-    
     options.UseSqlite($"Data Source={dbPath}");
     
     // Enable detailed logging in development
@@ -50,6 +54,23 @@ builder.Services.AddDbContext<DocumentExtractionContext>(options =>
         options.EnableDetailedErrors();
     }
 });
+
+// Add Identity database context (shares the same SQLite file)
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+{
+    options.UseSqlite($"Data Source={dbPath}");
+});
+
+// Configure ASP.NET Core Identity
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+{
+    options.Password.RequireDigit = true;
+    options.Password.RequiredLength = 6;
+    options.User.RequireUniqueEmail = true;
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(10);
+    options.Lockout.MaxFailedAccessAttempts = 5;
+}).AddEntityFrameworkStores<ApplicationDbContext>()
+  .AddDefaultTokenProviders();
 
 // Register OCR and document processing services
 builder.Services.AddScoped<ITextExtractor, TesseractTextExtractor>();
@@ -78,6 +99,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseStaticFiles();
 app.UseRouting();
+app.UseAuthentication();
 app.UseAuthorization();
 
 // Ensure database is created and display startup information
@@ -85,6 +107,10 @@ using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<DocumentExtractionContext>();
     context.EnsureCreated();
+
+    // Apply Identity migrations / create tables
+    var identityContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    identityContext.Database.Migrate();
     
     // Display startup information
     Console.WriteLine("🚀 Document Intelligence Web Application Starting...");
@@ -102,5 +128,8 @@ using (var scope = app.Services.CreateScope())
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Document}/{action=Index}/{id?}");
+
+// Map Razor Pages for Identity UI
+app.MapRazorPages();
 
 app.Run();
