@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Cryptography;
 
 namespace DocumentExtractor.Web.Controllers;
 
@@ -26,6 +27,13 @@ public class AuthController : ControllerBase
         _config = config;
     }
 
+    private string GenerateRefreshToken()
+    {
+        var randomBytes = new byte[32];
+        RandomNumberGenerator.Fill(randomBytes);
+        return Convert.ToBase64String(randomBytes);
+    }
+
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
@@ -44,7 +52,68 @@ public class AuthController : ControllerBase
             return Forbid("Subscription inactive");
 
         var jwt = GenerateJwtToken(user);
-        return Ok(new { token = jwt });
+        var refreshToken = GenerateRefreshToken();
+        user.RefreshToken = refreshToken;
+        user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+        await _userManager.UpdateAsync(user);
+
+        return Ok(new TokenResponse { AccessToken = jwt, RefreshToken = refreshToken });
+    }
+
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh([FromBody] RefreshRequest request)
+    {
+        var principal = GetPrincipalFromExpiredToken(request.AccessToken);
+        if (principal == null)
+            return BadRequest("Invalid token");
+
+        var userId = principal.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        if (userId == null)
+            return BadRequest();
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null ||
+            user.RefreshToken != request.RefreshToken ||
+            user.RefreshTokenExpiryTime <= DateTime.UtcNow)
+        {
+            return Unauthorized();
+        }
+
+        var newJwt = GenerateJwtToken(user);
+        var newRefresh = GenerateRefreshToken();
+        user.RefreshToken = newRefresh;
+        user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+        await _userManager.UpdateAsync(user);
+
+        return Ok(new TokenResponse { AccessToken = newJwt, RefreshToken = newRefresh });
+    }
+
+    private ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
+    {
+        var key = _config["Jwt:Key"] ?? "SuperSecretDevelopmentKey!123";
+        var tokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateAudience = false,
+            ValidateIssuer = false,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
+            ValidateLifetime = false // We are validating expired token here
+        };
+
+        var tokenHandler = new JwtSecurityTokenHandler();
+        try
+        {
+            var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out var securityToken);
+            if (securityToken is JwtSecurityToken jwtSecurityToken)
+            {
+                return principal;
+            }
+        }
+        catch
+        {
+            return null;
+        }
+        return null;
     }
 
     private string GenerateJwtToken(ApplicationUser user)

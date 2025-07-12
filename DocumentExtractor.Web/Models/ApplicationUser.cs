@@ -10,4 +10,12 @@ public class ApplicationUser : IdentityUser
 {
     // Additional custom properties can be added here (e.g., SubscriptionStatus)
     public SubscriptionStatus SubscriptionStatus { get; set; } = SubscriptionStatus.Trial;
+
+    // Stripe identifiers to link billing information
+    public string? StripeCustomerId { get; set; }
+    public string? StripeSubscriptionId { get; set; }
+
+    // Refresh token storage for JWT renewal
+    public string? RefreshToken { get; set; }
+    public DateTime? RefreshTokenExpiryTime { get; set; }
 }

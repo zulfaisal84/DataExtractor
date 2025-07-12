@@ -18,26 +18,28 @@ public class SecureTokenStore
         _filePath = Path.Combine(dir, "token.dat");
     }
 
-    public void Save(string token)
+    public void Save(string accessToken, string refreshToken)
     {
-        var data = Encoding.UTF8.GetBytes(token);
+        var json = $"{accessToken}|||{refreshToken}";
+        var data = Encoding.UTF8.GetBytes(json);
         var encrypted = ProtectedData.Protect(data, null, DataProtectionScope.CurrentUser);
         File.WriteAllBytes(_filePath, encrypted);
     }
 
-    public string? Load()
+    public (string? access, string? refresh) LoadTokens()
     {
-        if (!File.Exists(_filePath)) return null;
+        if (!File.Exists(_filePath)) return (null, null);
         try
         {
             var encrypted = File.ReadAllBytes(_filePath);
             var decrypted = ProtectedData.Unprotect(encrypted, null, DataProtectionScope.CurrentUser);
-            return Encoding.UTF8.GetString(decrypted);
+            var json = Encoding.UTF8.GetString(decrypted);
+            var parts = json.Split("|||", 2);
+            if (parts.Length == 2)
+                return (parts[0], parts[1]);
         }
-        catch
-        {
-            return null; // corruption or wrong user scope
-        }
+        catch { }
+        return (null, null);
     }
 
     public void Clear()

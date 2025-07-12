@@ -11,15 +11,17 @@ public class AuthService
     private readonly HttpClient _httpClient;
     private readonly SecureTokenStore _store = new();
     private string? _jwtToken;
+    private string? _refreshToken;
 
     public AuthService(HttpClient httpClient)
     {
         _httpClient = httpClient;
         // Attempt to load previously saved token
-        var token = _store.Load();
-        if (!string.IsNullOrEmpty(token))
+        var (access, refresh) = _store.LoadTokens();
+        if (!string.IsNullOrEmpty(access))
         {
-            _jwtToken = token;
+            _jwtToken = access;
+            _refreshToken = refresh;
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _jwtToken);
         }
     }
@@ -36,8 +38,9 @@ public class AuthService
             _jwtToken = tokenElement.GetString();
             if (!string.IsNullOrEmpty(_jwtToken))
             {
+                _refreshToken = json.GetProperty("refreshToken").GetString();
+                _store.Save(_jwtToken!, _refreshToken!);
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _jwtToken);
-                _store.Save(_jwtToken);
                 return true;
             }
         }
@@ -52,4 +55,20 @@ public class AuthService
     }
 
     public bool IsAuthenticated => !string.IsNullOrEmpty(_jwtToken);
+
+    public async Task<bool> TryRefreshAsync()
+    {
+        if (string.IsNullOrEmpty(_refreshToken) || string.IsNullOrEmpty(_jwtToken))
+            return false;
+
+        var response = await _httpClient.PostAsJsonAsync("api/auth/refresh", new { AccessToken = _jwtToken, RefreshToken = _refreshToken });
+        if (!response.IsSuccessStatusCode) return false;
+
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        _jwtToken = json.GetProperty("accessToken").GetString();
+        _refreshToken = json.GetProperty("refreshToken").GetString();
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _jwtToken);
+        _store.Save(_jwtToken!, _refreshToken!);
+        return true;
+    }
 }
