@@ -3,6 +3,7 @@ using DocumentExtractor.Data.Context;
 using DocumentExtractor.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DocumentExtractor.Web.Controllers
 {
@@ -16,6 +17,7 @@ namespace DocumentExtractor.Web.Controllers
     /// - [HttpGet], [HttpPost] attributes specify HTTP methods
     /// - ViewBag and ViewData work similarly to VB.NET MVC
     /// </summary>
+    [Authorize]
     public class DocumentController : Controller
     {
         private readonly DocumentExtractionContext _context;

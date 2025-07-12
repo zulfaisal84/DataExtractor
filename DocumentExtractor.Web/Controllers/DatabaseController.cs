@@ -2,6 +2,7 @@ using DocumentExtractor.Core.Models;
 using DocumentExtractor.Data.Context;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DocumentExtractor.Web.Controllers
 {
@@ -9,6 +10,7 @@ namespace DocumentExtractor.Web.Controllers
     /// Controller for viewing database contents and system statistics.
     /// This provides insight into the stored data and pattern learning system.
     /// </summary>
+    [Authorize(Roles = "Admin")]
     public class DatabaseController : Controller
     {
         private readonly DocumentExtractionContext _context;
