@@ -121,6 +121,7 @@ if (!app.Environment.IsDevelopment())
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication(); // handles both cookie & JWT schemes
+app.UseMiddleware<DocumentExtractor.Web.Middleware.SubscriptionEnforcementMiddleware>();
 app.UseAuthorization();
 
 // Ensure database is created and display startup information

@@ -9,11 +9,19 @@ namespace DocumentExtractor.Desktop.Services;
 public class AuthService
 {
     private readonly HttpClient _httpClient;
+    private readonly SecureTokenStore _store = new();
     private string? _jwtToken;
 
     public AuthService(HttpClient httpClient)
     {
         _httpClient = httpClient;
+        // Attempt to load previously saved token
+        var token = _store.Load();
+        if (!string.IsNullOrEmpty(token))
+        {
+            _jwtToken = token;
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _jwtToken);
+        }
     }
 
     public async Task<bool> LoginAsync(string email, string password)
@@ -29,6 +37,7 @@ public class AuthService
             if (!string.IsNullOrEmpty(_jwtToken))
             {
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _jwtToken);
+                _store.Save(_jwtToken);
                 return true;
             }
         }
@@ -39,6 +48,7 @@ public class AuthService
     {
         _jwtToken = null;
         _httpClient.DefaultRequestHeaders.Authorization = null;
+        _store.Clear();
     }
 
     public bool IsAuthenticated => !string.IsNullOrEmpty(_jwtToken);
