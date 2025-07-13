@@ -1,0 +1,167 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DocumentExtractor.Desktop.ViewModels"
+             x:Class="DocumentExtractor.Desktop.Views.Components.OutputPreviewPanel"
+             x:DataType="vm:MainViewModel">
+
+    <Border Background="White" CornerRadius="8" BorderBrush="#E0E0E0" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            
+            <!-- Header -->
+            <Border Grid.Row="0" Background="#F5F5F5" CornerRadius="8,8,0,0" Padding="15,10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <StackPanel Grid.Column="0" Orientation="Horizontal">
+                        <TextBlock Text="📊" FontSize="16" Margin="0,0,8,0"/>
+                        <TextBlock Text="Extraction Results" FontSize="14" FontWeight="Bold" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Button Content="📄" Background="Transparent" Foreground="#666" Padding="5"
+                               ToolTip.Tip="Table View" Margin="5,0"/>
+                        <Button Content="🗂️" Background="Transparent" Foreground="#666" Padding="5"
+                               ToolTip.Tip="JSON View" Margin="5,0"/>
+                        <Button Content="📋" Background="Transparent" Foreground="#666" Padding="5"
+                               ToolTip.Tip="Template Preview" Margin="5,0"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+            
+            <!-- Content Area -->
+            <TabControl Grid.Row="1" Background="White">
+                <TabItem Header="Table View">
+                    <ScrollViewer>
+                        <StackPanel Margin="15">
+                            <!-- Extracted Fields Preview -->
+                            <TextBlock Text="Extracted Fields" FontSize="12" FontWeight="Bold" 
+                                      Foreground="#666" Margin="0,0,0,10"/>
+                            
+                            <!-- Sample extracted data -->
+                            <Border Background="#F9F9F9" CornerRadius="5" Padding="10" Margin="0,0,0,15">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="120"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    
+                                    <!-- Header -->
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Field" FontWeight="Bold" FontSize="11"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="Value" FontWeight="Bold" FontSize="11"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="2" Text="Confidence" FontWeight="Bold" FontSize="11"/>
+                                    
+                                    <!-- Sample Data -->
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Account #" FontSize="11" Margin="0,5,0,0"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="Waiting for extraction..." FontSize="11" 
+                                              Foreground="#999" Margin="0,5,0,0"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="2" Text="-" FontSize="11" 
+                                              Foreground="#999" Margin="0,5,0,0"/>
+                                    
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Amount" FontSize="11" Margin="0,5,0,0"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="Waiting for extraction..." FontSize="11" 
+                                              Foreground="#999" Margin="0,5,0,0"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="2" Text="-" FontSize="11" 
+                                              Foreground="#999" Margin="0,5,0,0"/>
+                                    
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Date" FontSize="11" Margin="0,5,0,0"/>
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="Waiting for extraction..." FontSize="11" 
+                                              Foreground="#999" Margin="0,5,0,0"/>
+                                    <TextBlock Grid.Row="3" Grid.Column="2" Text="-" FontSize="11" 
+                                              Foreground="#999" Margin="0,5,0,0"/>
+                                </Grid>
+                            </Border>
+                            
+                            <!-- Instructions -->
+                            <Border Background="#E3F2FD" CornerRadius="5" Padding="10">
+                                <StackPanel>
+                                    <TextBlock Text="💡 Getting Started" FontWeight="Bold" FontSize="11" Margin="0,0,0,5"/>
+                                    <TextBlock Text="1. Take a screenshot of a field and send it in chat" FontSize="10" Margin="0,2"/>
+                                    <TextBlock Text="2. Draw colored boxes around fields you want to extract" FontSize="10" Margin="0,2"/>
+                                    <TextBlock Text="3. Click 'Test' to calibrate accuracy" FontSize="10" Margin="0,2"/>
+                                    <TextBlock Text="4. Process documents to see results here" FontSize="10" Margin="0,2"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+                
+                <TabItem Header="Template Preview">
+                    <ScrollViewer>
+                        <StackPanel Margin="15">
+                            <TextBlock Text="Excel Template Preview" FontSize="12" FontWeight="Bold" 
+                                      Foreground="#666" Margin="0,0,0,10"/>
+                            
+                            <Border Background="#F9F9F9" CornerRadius="5" Padding="10">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="100"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    
+                                    <!-- Excel-like grid -->
+                                    <Border Grid.Row="0" Grid.Column="0" BorderBrush="#DDD" BorderThickness="1" Padding="5">
+                                        <TextBlock Text="Account" FontWeight="Bold" FontSize="10"/>
+                                    </Border>
+                                    <Border Grid.Row="0" Grid.Column="1" BorderBrush="#DDD" BorderThickness="1" Padding="5">
+                                        <TextBlock Text="Amount" FontWeight="Bold" FontSize="10"/>
+                                    </Border>
+                                    <Border Grid.Row="0" Grid.Column="2" BorderBrush="#DDD" BorderThickness="1" Padding="5">
+                                        <TextBlock Text="Date" FontWeight="Bold" FontSize="10"/>
+                                    </Border>
+                                    <Border Grid.Row="0" Grid.Column="3" BorderBrush="#DDD" BorderThickness="1" Padding="5">
+                                        <TextBlock Text="Status" FontWeight="Bold" FontSize="10"/>
+                                    </Border>
+                                    
+                                    <Border Grid.Row="1" Grid.Column="0" BorderBrush="#DDD" BorderThickness="1" Padding="5">
+                                        <TextBlock Text="[Account #]" FontSize="9" Foreground="#999"/>
+                                    </Border>
+                                    <Border Grid.Row="1" Grid.Column="1" BorderBrush="#DDD" BorderThickness="1" Padding="5">
+                                        <TextBlock Text="[Amount]" FontSize="9" Foreground="#999"/>
+                                    </Border>
+                                    <Border Grid.Row="1" Grid.Column="2" BorderBrush="#DDD" BorderThickness="1" Padding="5">
+                                        <TextBlock Text="[Date]" FontSize="9" Foreground="#999"/>
+                                    </Border>
+                                    <Border Grid.Row="1" Grid.Column="3" BorderBrush="#DDD" BorderThickness="1" Padding="5">
+                                        <TextBlock Text="Extracted" FontSize="9" Foreground="#999"/>
+                                    </Border>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+            </TabControl>
+            
+            <!-- Footer Actions -->
+            <Border Grid.Row="2" Background="#F5F5F5" CornerRadius="0,0,8,8" Padding="15,10">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="📤 Export Excel" Background="#27AE60" Foreground="White"
+                           Padding="10,5" CornerRadius="3" Margin="0,0,10,0" FontSize="11"/>
+                    <Button Content="💾 Save Template" Background="#3498DB" Foreground="White"
+                           Padding="10,5" CornerRadius="3" FontSize="11"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Border>
+</UserControl>

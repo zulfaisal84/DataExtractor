@@ -11,6 +11,72 @@ using System.Linq;
 namespace DocumentExtractor.Desktop.Services;
 
 /// <summary>
+/// ISO page size constants for document aspect ratios
+/// </summary>
+public static class ISOPageSizes
+{
+    /// <summary>ISO A4 size in millimeters (210 × 297)</summary>
+    public static readonly Size A4_MM = new Size(210, 297);
+    
+    /// <summary>ISO A3 size in millimeters (297 × 420)</summary>
+    public static readonly Size A3_MM = new Size(297, 420);
+    
+    /// <summary>US Letter size in millimeters (216 × 279)</summary>
+    public static readonly Size Letter_MM = new Size(216, 279);
+    
+    /// <summary>A4 aspect ratio (√2 ≈ 1.414)</summary>
+    public const double A4_RATIO = 1.414213562373095;
+    
+    /// <summary>US Letter aspect ratio (11/8.5 ≈ 1.294)</summary>
+    public const double LETTER_RATIO = 1.294117647058824;
+    
+    /// <summary>
+    /// Calculate canvas size maintaining A4 aspect ratio
+    /// </summary>
+    /// <param name="availableWidth">Available width for the canvas</param>
+    /// <param name="maxHeight">Maximum height constraint</param>
+    /// <returns>Size with A4 aspect ratio that fits constraints</returns>
+    public static Size CalculateA4CanvasSize(double availableWidth, double maxHeight = double.MaxValue)
+    {
+        var idealHeight = availableWidth * A4_RATIO;
+        
+        if (idealHeight <= maxHeight)
+        {
+            return new Size(availableWidth, idealHeight);
+        }
+        else
+        {
+            // Height constrained - calculate width from height
+            var constrainedWidth = maxHeight / A4_RATIO;
+            return new Size(constrainedWidth, maxHeight);
+        }
+    }
+    
+    /// <summary>
+    /// Detect document format based on aspect ratio
+    /// </summary>
+    /// <param name="width">Document width</param>
+    /// <param name="height">Document height</param>
+    /// <returns>Detected page format</returns>
+    public static string DetectPageFormat(double width, double height)
+    {
+        var ratio = height / width;
+        var tolerance = 0.05; // 5% tolerance
+        
+        if (Math.Abs(ratio - A4_RATIO) < tolerance)
+            return "A4";
+        else if (Math.Abs(ratio - LETTER_RATIO) < tolerance)
+            return "US Letter";
+        else if (ratio > 1.5)
+            return "Portrait";
+        else if (ratio < 0.8)
+            return "Landscape";
+        else
+            return "Custom";
+    }
+}
+
+/// <summary>
 /// Simplified document preview service that focuses on image support.
 /// PDF support can be added later once we have proper library integration.
 /// </summary>
@@ -28,27 +94,34 @@ public class SimpleDocumentPreviewService
     {
         try
         {
+            Console.WriteLine($"[DEBUG] Loading document: {filePath}");
             var extension = Path.GetExtension(filePath).ToLowerInvariant();
+            Console.WriteLine($"[DEBUG] Extension detected: {extension}");
             
             if (extension == ".pdf")
             {
+                Console.WriteLine($"[DEBUG] Loading as PDF");
                 return await LoadPdfPlaceholderAsync(filePath);
             }
             else if (extension is ".png" or ".jpg" or ".jpeg" or ".bmp" or ".tiff")
             {
-                return await LoadImageAsync(filePath);
+                Console.WriteLine($"[DEBUG] Loading as image");
+                var result = await LoadImageAsync(filePath);
+                Console.WriteLine($"[DEBUG] Image load result: {result}");
+                return result;
             }
+            Console.WriteLine($"[DEBUG] Unsupported extension: {extension}");
             return -1;
         }
         catch (Exception ex)
         {
-            // Log error silently for production
+            Console.WriteLine($"[DEBUG] Error in LoadDocumentAsync: {ex.Message}");
             return -1;
         }
     }
 
     /// <summary>
-    /// Renders a specific page of a document to a Canvas.
+    /// Renders a specific page of a document to a Canvas with proper aspect ratio.
     /// </summary>
     /// <param name="filePath">Path to the document</param>
     /// <param name="pageIndex">Page index (0-based)</param>
@@ -73,6 +146,14 @@ public class SimpleDocumentPreviewService
 
             // Clear existing content
             canvas.Children.Clear();
+            
+            // Set canvas background to light gray to show document bounds
+            canvas.Background = new SolidColorBrush(Color.FromRgb(245, 245, 245));
+
+            // Calculate optimal canvas size for A4 aspect ratio
+            var canvasSize = CalculateOptimalCanvasSize(canvas, metadata);
+            canvas.Width = canvasSize.Width;
+            canvas.Height = canvasSize.Height;
 
             // Handle PDF placeholder
             if (metadata.DocumentType == "PDF")
@@ -88,48 +169,45 @@ public class SimpleDocumentPreviewService
             }
 
             var bitmap = pages[pageIndex];
+            
+            // Calculate document dimensions and scaling
+            var documentSize = CalculateDocumentDisplaySize(bitmap, canvas, zoomLevel);
+            var centerOffset = CalculateCenterOffset(canvas, documentSize);
+            
+            // Create white document background
+            var documentBackground = new Border
+            {
+                Width = documentSize.Width,
+                Height = documentSize.Height,
+                Background = Brushes.White,
+                BorderBrush = new SolidColorBrush(Color.FromRgb(200, 200, 200)),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(2)
+            };
+            
+            Canvas.SetLeft(documentBackground, centerOffset.X);
+            Canvas.SetTop(documentBackground, centerOffset.Y);
+            canvas.Children.Add(documentBackground);
 
-            // Calculate scaled dimensions
-            var scaledWidth = bitmap.PixelSize.Width * zoomLevel;
-            var scaledHeight = bitmap.PixelSize.Height * zoomLevel;
-
-            // Update canvas size
-            canvas.Width = Math.Max(scaledWidth, 400);
-            canvas.Height = Math.Max(scaledHeight, 500);
-
-            // Create image control
+            // Create image control with proper sizing
             var imageControl = new Image
             {
                 Source = bitmap,
-                Width = scaledWidth,
-                Height = scaledHeight,
-                Stretch = Stretch.Fill
+                Width = documentSize.Width - 2, // Account for border
+                Height = documentSize.Height - 2,
+                Stretch = Stretch.Uniform // Maintain aspect ratio
             };
 
-            // Position image at top-left
-            Canvas.SetLeft(imageControl, 0);
-            Canvas.SetTop(imageControl, 0);
-
-            // Add to canvas
+            // Position image centered on document background
+            Canvas.SetLeft(imageControl, centerOffset.X + 1);
+            Canvas.SetTop(imageControl, centerOffset.Y + 1);
             canvas.Children.Add(imageControl);
 
-            // Add page number indicator if multi-page
-            if (pages.Count > 1)
-            {
-                var pageIndicator = new TextBlock
-                {
-                    Text = $"Page {pageIndex + 1} of {pages.Count}",
-                    Background = Brushes.Black,
-                    Foreground = Brushes.White,
-                    Padding = new Thickness(8, 4),
-                    FontSize = 12,
-                    FontWeight = FontWeight.Bold
-                };
-
-                Canvas.SetRight(pageIndicator, 10);
-                Canvas.SetTop(pageIndicator, 10);
-                canvas.Children.Add(pageIndicator);
-            }
+            // Add document info overlay
+            var infoPanel = CreateDocumentInfoPanel(metadata, bitmap, pageIndex, pages.Count);
+            Canvas.SetRight(infoPanel, 10);
+            Canvas.SetTop(infoPanel, 10);
+            canvas.Children.Add(infoPanel);
         }
         catch (Exception ex)
         {
@@ -213,6 +291,160 @@ public class SimpleDocumentPreviewService
         _documentMetadata.Clear();
     }
 
+    /// <summary>
+    /// Calculate optimal canvas size for document display
+    /// </summary>
+    private Size CalculateOptimalCanvasSize(Canvas canvas, DocumentMetadata metadata)
+    {
+        // Get available space (with some padding)
+        var availableWidth = Math.Max(400, canvas.Parent is Control parent ? parent.Bounds.Width - 20 : 600);
+        var availableHeight = Math.Max(500, canvas.Parent is Control parentControl ? parentControl.Bounds.Height - 20 : 800);
+        
+        // Use most of the available space for better readability
+        return new Size(availableWidth, availableHeight);
+    }
+
+    /// <summary>
+    /// Calculate document display size maintaining aspect ratio and fitting in canvas
+    /// </summary>
+    private Size CalculateDocumentDisplaySize(Bitmap bitmap, Canvas canvas, double zoomLevel)
+    {
+        // Get document's natural aspect ratio
+        var documentRatio = (double)bitmap.PixelSize.Height / bitmap.PixelSize.Width;
+        
+        // Calculate maximum size that fits in canvas with minimal padding for maximum readability
+        var maxWidth = canvas.Width - 20; // 10px padding on each side
+        var maxHeight = canvas.Height - 20;
+        
+        // Start with width that fills most of the available space
+        var targetWidth = maxWidth * zoomLevel;
+        var targetHeight = targetWidth * documentRatio;
+        
+        // If height is too big, scale down based on height constraint
+        if (targetHeight > maxHeight * zoomLevel)
+        {
+            targetHeight = maxHeight * zoomLevel;
+            targetWidth = targetHeight / documentRatio;
+        }
+        
+        // Ensure minimum readable size - much larger than before
+        var minWidth = Math.Min(400, maxWidth * 0.8);
+        var minHeight = minWidth * documentRatio;
+        
+        return new Size(
+            Math.Max(targetWidth, minWidth), 
+            Math.Max(targetHeight, minHeight)
+        );
+    }
+
+    /// <summary>
+    /// Calculate offset to center document in canvas
+    /// </summary>
+    private Point CalculateCenterOffset(Canvas canvas, Size documentSize)
+    {
+        var x = (canvas.Width - documentSize.Width) / 2;
+        var y = (canvas.Height - documentSize.Height) / 2;
+        return new Point(Math.Max(0, x), Math.Max(0, y));
+    }
+
+    /// <summary>
+    /// Create document information panel
+    /// </summary>
+    private Border CreateDocumentInfoPanel(DocumentMetadata metadata, Bitmap bitmap, int pageIndex, int totalPages)
+    {
+        var stackPanel = new StackPanel
+        {
+            Orientation = Avalonia.Layout.Orientation.Vertical,
+            Spacing = 2
+        };
+        
+        // Document format detection
+        var format = ISOPageSizes.DetectPageFormat(bitmap.PixelSize.Width, bitmap.PixelSize.Height);
+        var ratio = (double)bitmap.PixelSize.Height / bitmap.PixelSize.Width;
+        
+        // Page info
+        if (totalPages > 1)
+        {
+            stackPanel.Children.Add(new TextBlock
+            {
+                Text = $"Page {pageIndex + 1} of {totalPages}",
+                Foreground = Brushes.White,
+                FontSize = 11,
+                FontWeight = FontWeight.Bold
+            });
+        }
+        
+        // Format info
+        stackPanel.Children.Add(new TextBlock
+        {
+            Text = $"{format} | {bitmap.PixelSize.Width}×{bitmap.PixelSize.Height}",
+            Foreground = Brushes.White,
+            FontSize = 10
+        });
+        
+        // Aspect ratio
+        stackPanel.Children.Add(new TextBlock
+        {
+            Text = $"Ratio: {ratio:F2}",
+            Foreground = Brushes.White,
+            FontSize = 9
+        });
+        
+        return new Border
+        {
+            Background = new SolidColorBrush(Color.FromArgb(180, 0, 0, 0)), // Semi-transparent black
+            CornerRadius = new CornerRadius(4),
+            Padding = new Thickness(8, 4),
+            Child = stackPanel
+        };
+    }
+
+    /// <summary>
+    /// Create PDF document information panel
+    /// </summary>
+    private Border CreatePdfInfoPanel(DocumentMetadata metadata)
+    {
+        var stackPanel = new StackPanel
+        {
+            Orientation = Avalonia.Layout.Orientation.Vertical,
+            Spacing = 2
+        };
+        
+        // Document type
+        stackPanel.Children.Add(new TextBlock
+        {
+            Text = "PDF Document",
+            Foreground = Brushes.White,
+            FontSize = 11,
+            FontWeight = FontWeight.Bold
+        });
+        
+        // Assumed format (since we can't read PDF dimensions yet)
+        stackPanel.Children.Add(new TextBlock
+        {
+            Text = "A4 | 210×297mm",
+            Foreground = Brushes.White,
+            FontSize = 10
+        });
+        
+        // File size
+        var fileSizeKB = metadata.FileSize / 1024;
+        stackPanel.Children.Add(new TextBlock
+        {
+            Text = $"Size: {fileSizeKB:N0} KB",
+            Foreground = Brushes.White,
+            FontSize = 9
+        });
+        
+        return new Border
+        {
+            Background = new SolidColorBrush(Color.FromArgb(180, 0, 0, 0)), // Semi-transparent black
+            CornerRadius = new CornerRadius(4),
+            Padding = new Thickness(8, 4),
+            Child = stackPanel
+        };
+    }
+
     private async Task<int> LoadPdfPlaceholderAsync(string filePath)
     {
         try
@@ -239,7 +471,9 @@ public class SimpleDocumentPreviewService
     {
         try
         {
+            Console.WriteLine($"[DEBUG] Creating bitmap from: {filePath}");
             var bitmap = new Bitmap(filePath);
+            Console.WriteLine($"[DEBUG] Bitmap created successfully. Size: {bitmap.PixelSize.Width}x{bitmap.PixelSize.Height}");
             var pages = new List<Bitmap> { bitmap };
             
             _documentPages[filePath] = pages;
@@ -251,10 +485,13 @@ public class SimpleDocumentPreviewService
                 FileSize = new FileInfo(filePath).Length
             };
             
+            Console.WriteLine($"[DEBUG] Image metadata stored successfully");
             return 1;
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"[DEBUG] Error in LoadImageAsync: {ex.Message}");
+            Console.WriteLine($"[DEBUG] Stack trace: {ex.StackTrace}");
             return -1;
         }
     }
@@ -262,17 +499,21 @@ public class SimpleDocumentPreviewService
 
     private async Task RenderPdfPlaceholder(Canvas canvas, string filePath, int pageIndex)
     {
-        canvas.Children.Clear();
-        canvas.Width = 600;
-        canvas.Height = 800;
+        // Canvas sizing is already handled by RenderPageToCanvasAsync
         
-        // Create PDF placeholder UI
+        // Calculate PDF placeholder size (80% of canvas for nice padding)
+        var placeholderWidth = canvas.Width * 0.8;
+        var placeholderHeight = canvas.Height * 0.8;
+        var centerX = (canvas.Width - placeholderWidth) / 2;
+        var centerY = (canvas.Height - placeholderHeight) / 2;
+        
+        // Create PDF placeholder with A4 proportions
         var border = new Border
         {
-            Width = 580,
-            Height = 780,
+            Width = placeholderWidth,
+            Height = placeholderHeight,
             Background = Brushes.White,
-            BorderBrush = Brushes.Gray,
+            BorderBrush = new SolidColorBrush(Color.FromRgb(200, 200, 200)),
             BorderThickness = new Thickness(2),
             CornerRadius = new CornerRadius(5)
         };
@@ -337,9 +578,16 @@ public class SimpleDocumentPreviewService
 
         border.Child = stackPanel;
 
-        Canvas.SetLeft(border, 10);
-        Canvas.SetTop(border, 10);
+        Canvas.SetLeft(border, centerX);
+        Canvas.SetTop(border, centerY);
         canvas.Children.Add(border);
+        
+        // Add document info for PDF
+        var metadata = _documentMetadata[filePath];
+        var pdfInfoPanel = CreatePdfInfoPanel(metadata);
+        Canvas.SetRight(pdfInfoPanel, 10);
+        Canvas.SetTop(pdfInfoPanel, 10);
+        canvas.Children.Add(pdfInfoPanel);
     }
 }
 

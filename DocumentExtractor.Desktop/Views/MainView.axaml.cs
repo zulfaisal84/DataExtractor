@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace DocumentExtractor.Desktop.Views;
 
 /// <summary>
-/// Main view implementing the single-tab, three-panel conversational interface
+/// Simplified main view - ChatGPT style interface for document intelligence
 /// </summary>
 public partial class MainView : UserControl
 {
@@ -22,49 +22,112 @@ public partial class MainView : UserControl
         // Set up document canvas reference for rendering
         if (DataContext is MainViewModel vm)
         {
-            vm.DocumentCanvas = DocumentCanvas;
+            // Check if InputDocumentCanvas exists (new 4-panel layout)
+            var inputCanvas = this.FindControl<Canvas>("InputDocumentCanvas");
+            if (inputCanvas != null)
+            {
+                vm.DocumentCanvas = inputCanvas;
+            }
+            else
+            {
+                // Fallback to old DocumentCanvas if it exists
+                var oldCanvas = this.FindControl<Canvas>("DocumentCanvas");
+                if (oldCanvas != null)
+                {
+                    vm.DocumentCanvas = oldCanvas;
+                }
+            }
         }
         
-        // Wire up drag-and-drop events
-        SetupDragAndDrop();
+        // Set up global drag-and-drop after control loads
+        this.Loaded += OnLoaded;
     }
     
-    private void SetupDragAndDrop()
+    private void OnLoaded(object? sender, RoutedEventArgs e)
     {
-        // Add drag-and-drop event handlers to the chat scroll viewer
-        ChatScrollViewer.AddHandler(DragDrop.DragOverEvent, OnChatDragOver);
-        ChatScrollViewer.AddHandler(DragDrop.DropEvent, OnChatDrop);
+        SetupGlobalDragDrop();
+    }
+    
+    /// <summary>
+    /// Set up global drag-and-drop for the entire control
+    /// </summary>
+    private void SetupGlobalDragDrop()
+    {
+        // Make the entire control accept drag-and-drop
+        this.AddHandler(DragDrop.DragOverEvent, OnGlobalDragOver);
+        this.AddHandler(DragDrop.DropEvent, OnGlobalDrop);
+        Console.WriteLine("✅ Global drag-and-drop handlers registered");
     }
 
-    #region File Management Events
+    #region Global Drag and Drop Events
 
-    private void OnFileStatusClicked(object? sender, PointerPressedEventArgs e)
+    private void OnGlobalDragOver(object? sender, DragEventArgs e)
     {
-        // Show file list popup or expand details
-        if (DataContext is MainViewModel vm)
+        Console.WriteLine("🔍 Global drag detected");
+        
+        if (e.Data.Contains(DataFormats.Files))
         {
-            vm.ShowFileDetails();
+            var files = e.Data.GetFiles();
+            if (files != null && files.Any(f => IsValidFileType(f.Path.LocalPath)))
+            {
+                Console.WriteLine($"✅ Valid files found: {files.Count()}");
+                e.DragEffects = DragDropEffects.Copy;
+                
+                // Visual feedback - highlight the entire area
+                this.Opacity = 0.8;
+            }
+            else
+            {
+                Console.WriteLine("❌ No valid files found");
+                e.DragEffects = DragDropEffects.None;
+            }
+        }
+        else
+        {
+            e.DragEffects = DragDropEffects.None;
         }
     }
 
-    private void OnTemplateStatusClicked(object? sender, PointerPressedEventArgs e)
+    private async void OnGlobalDrop(object? sender, DragEventArgs e)
     {
-        // Show template list popup or expand details
-        if (DataContext is MainViewModel vm)
+        Console.WriteLine("🎯 Global drop triggered!");
+        
+        // Reset visual feedback
+        this.Opacity = 1.0;
+
+        if (e.Data.Contains(DataFormats.Files) && DataContext is MainViewModel vm)
         {
-            vm.ShowTemplateDetails();
+            Console.WriteLine("📂 Processing dropped files...");
+            var files = e.Data.GetFiles();
+            if (files != null)
+            {
+                var filePaths = files.Where(f => IsValidFileType(f.Path.LocalPath))
+                                    .Select(f => f.Path.LocalPath)
+                                    .ToList();
+                
+                Console.WriteLine($"📋 File paths extracted: {filePaths.Count} files");
+                
+                if (filePaths.Any())
+                {
+                    Console.WriteLine("🚀 Calling HandleDroppedFiles...");
+                    await vm.HandleDroppedFiles(filePaths);
+                    
+                    Console.WriteLine("🖼️ Rendering document...");
+                    if (vm.DocumentCanvas != null)
+                    {
+                        await vm.RenderCurrentDocumentAsync(vm.DocumentCanvas);
+                    }
+                    Console.WriteLine("✅ Drop processing complete");
+                }
+            }
         }
     }
 
-    private void OnDocumentAreaClicked(object? sender, PointerPressedEventArgs e)
+    private static bool IsValidFileType(string filePath)
     {
-        // Handle click on document area (maybe select for annotation)
-        if (DataContext is MainViewModel vm)
-        {
-            vm.SelectDocumentArea(e.GetPosition(sender as Control));
-        }
+        var extension = Path.GetExtension(filePath).ToLowerInvariant();
+        return extension is ".png" or ".jpg" or ".jpeg" or ".pdf" or ".xlsx" or ".xls" or ".tiff" or ".bmp";
     }
-
 
     #endregion
 
@@ -106,6 +169,10 @@ public partial class MainView : UserControl
         }
     }
 
+    #endregion
+
+    #region Zoom Controls
+
     private void OnZoomOut(object? sender, RoutedEventArgs e)
     {
         if (DataContext is MainViewModel vm)
@@ -134,46 +201,6 @@ public partial class MainView : UserControl
 
     #region Chat Events
 
-    private void OnClearChat(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is MainViewModel vm)
-        {
-            vm.ClearChatHistory();
-        }
-    }
-
-    private void OnScreenshotClicked(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is MainViewModel vm)
-        {
-            vm.TakeScreenshot();
-        }
-    }
-
-    private void OnCalibrateClicked(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is MainViewModel vm)
-        {
-            vm.StartCalibration();
-        }
-    }
-
-    private async void OnImportFolderClicked(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is MainViewModel vm)
-        {
-            await vm.ImportFolder();
-        }
-    }
-
-    private void OnProcessClicked(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is MainViewModel vm)
-        {
-            vm.StartProcessing();
-        }
-    }
-
     private async void OnSendMessage(object? sender, RoutedEventArgs e)
     {
         if (DataContext is MainViewModel vm)
@@ -184,103 +211,90 @@ public partial class MainView : UserControl
 
     private async void OnMessageKeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Enter && DataContext is MainViewModel vm)
+        if (e.Key == Key.Enter && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && DataContext is MainViewModel vm)
         {
+            e.Handled = true;
             await vm.SendMessage();
         }
     }
 
     #endregion
 
-    #region Drag and Drop Events
+    #region New 4-Panel Layout Events
 
-    private void OnChatDragOver(object? sender, DragEventArgs e)
+    private void OnToggleInputView(object? sender, RoutedEventArgs e)
     {
-        // Check if dragged content contains files
-        if (e.Data.Contains(DataFormats.Files))
+        if (DataContext is MainViewModel vm)
         {
-            var files = e.Data.GetFiles();
-            if (files != null && files.Any(f => IsValidFileType(f.Path.LocalPath)))
+            vm.IsInputExpanded = !vm.IsInputExpanded;
+            UpdateViewLayout(vm);
+        }
+    }
+
+    private void OnToggleOutputView(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is MainViewModel vm)
+        {
+            vm.IsOutputExpanded = !vm.IsOutputExpanded;
+            UpdateViewLayout(vm);
+        }
+    }
+
+    private void OnPopOutChat(object? sender, RoutedEventArgs e)
+    {
+        // TODO: Implement pop-out window for chat in Week 2
+        if (DataContext is MainViewModel vm)
+        {
+            vm.ChatMessages.Add(new Models.ChatMessage
             {
-                e.DragEffects = DragDropEffects.Copy;
-                
-                // Visual feedback - change background color
-                if (sender is ScrollViewer scrollViewer)
-                {
-                    scrollViewer.Background = Avalonia.Media.Brushes.LightBlue;
-                }
-            }
-            else
-            {
-                e.DragEffects = DragDropEffects.None;
-            }
+                Content = "Pop-out chat window coming in Week 2!",
+                SenderName = "AI Assistant",
+                Type = Models.ChatMessageType.Bot,
+                Timestamp = DateTime.Now
+            });
+        }
+    }
+
+    private void UpdateViewLayout(MainViewModel vm)
+    {
+        // Update grid column definitions based on expanded states
+        if (vm.IsInputExpanded && !vm.IsOutputExpanded)
+        {
+            // Input full-screen
+            vm.InputDocumentWidth = new GridLength(1, GridUnitType.Star);
+            vm.OutputDocumentWidth = new GridLength(0, GridUnitType.Pixel);
+            vm.IsInputVisible = true;
+            vm.IsOutputVisible = false;
+        }
+        else if (!vm.IsInputExpanded && vm.IsOutputExpanded)
+        {
+            // Output full-screen  
+            vm.InputDocumentWidth = new GridLength(0, GridUnitType.Pixel);
+            vm.OutputDocumentWidth = new GridLength(1, GridUnitType.Star);
+            vm.IsInputVisible = false;
+            vm.IsOutputVisible = true;
         }
         else
         {
-            e.DragEffects = DragDropEffects.None;
+            // Split view (default)
+            vm.InputDocumentWidth = new GridLength(1, GridUnitType.Star);
+            vm.OutputDocumentWidth = new GridLength(1, GridUnitType.Star);
+            vm.IsInputVisible = true;
+            vm.IsOutputVisible = true;
+            vm.IsInputExpanded = false;
+            vm.IsOutputExpanded = false;
         }
-    }
-
-    private async void OnChatDrop(object? sender, DragEventArgs e)
-    {
-        // Reset background color
-        if (sender is ScrollViewer scrollViewer)
-        {
-            scrollViewer.Background = Avalonia.Media.Brush.Parse("#F8F9FA");
-        }
-
-        if (e.Data.Contains(DataFormats.Files) && DataContext is MainViewModel vm)
-        {
-            var files = e.Data.GetFiles();
-            if (files != null)
-            {
-                // Extract file paths and use batch processing
-                var filePaths = files.Where(f => IsValidFileType(f.Path.LocalPath))
-                                    .Select(f => f.Path.LocalPath)
-                                    .ToList();
-                
-                if (filePaths.Any())
-                {
-                    // Use batch processing for multiple files
-                    await vm.HandleDroppedFiles(filePaths);
-                    
-                    // Render the current document (latest loaded)
-                    await RenderCurrentDocument();
-                }
-            }
-        }
-    }
-
-    private static bool IsValidFileType(string filePath)
-    {
-        var extension = Path.GetExtension(filePath).ToLowerInvariant();
-        return extension is ".png" or ".jpg" or ".jpeg" or ".pdf" or ".xlsx" or ".xls" or ".tiff" or ".bmp";
     }
 
     #endregion
 
     #region Document Rendering
 
-    /// <summary>
-    /// Renders the current document to the canvas
-    /// </summary>
     private async Task RenderCurrentDocument()
     {
-        if (DataContext is MainViewModel vm)
+        if (DataContext is MainViewModel vm && vm.DocumentCanvas != null)
         {
-            await vm.RenderCurrentDocumentAsync(DocumentCanvas);
-        }
-    }
-
-    #endregion
-
-    #region Template Events
-
-    private void OnPreviewTemplate(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is MainViewModel vm)
-        {
-            vm.PreviewTemplate();
+            await vm.RenderCurrentDocumentAsync(vm.DocumentCanvas);
         }
     }
 

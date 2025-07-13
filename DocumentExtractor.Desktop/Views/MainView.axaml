@@ -1,347 +1,310 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:DocumentExtractor.Desktop.ViewModels"
+             xmlns:converters="using:DocumentExtractor.Desktop.ViewModels"
              x:Class="DocumentExtractor.Desktop.Views.MainView"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:MainViewModel"
+             DragDrop.AllowDrop="True">
 
     <Design.DataContext>
         <vm:MainViewModel />
     </Design.DataContext>
 
     <UserControl.Resources>
-        <vm:BoolToBackgroundConverter x:Key="BoolToBackgroundConverter"/>
-        <vm:BoolToAlignmentConverter x:Key="BoolToAlignmentConverter"/>
+        <converters:BoolToBackgroundConverter x:Key="BoolToBackgroundConverter"/>
+        <converters:BoolToAlignmentConverter x:Key="BoolToAlignmentConverter"/>
     </UserControl.Resources>
 
     <Grid>
-        <!-- Three-Panel Layout: Input | Chat | Output -->
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="3*" MinWidth="350"/>
-            <ColumnDefinition Width="2*" MinWidth="320"/>
-            <ColumnDefinition Width="3*" MinWidth="350"/>
-        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="7*"/>
+            <RowDefinition Height="3*"/>
+        </Grid.RowDefinitions>
 
-        <!-- Input Panel -->
-        <Border Grid.Column="0" Background="WhiteSmoke" BorderBrush="LightGray" 
-                BorderThickness="0,0,1,0" Padding="15">
+        <!-- Document Preview Area (70% of screen) -->
+        <Border Grid.Row="0" Background="White" BorderBrush="LightGray" BorderThickness="1" Margin="10">
             <Grid>
+                <!-- Document Toggle Buttons -->
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <!-- Input Panel Header -->
-                <TextBlock Grid.Row="0" Text="📥 Input Documents" 
-                          FontSize="18" FontWeight="Bold" 
-                          Margin="0,0,0,15"/>
-
-                <!-- File Status Cards (Option 3) -->
-                <Border Grid.Row="1" Background="LightBlue" CornerRadius="8" 
-                       Padding="12" Margin="0,0,0,15" Cursor="Hand"
-                       PointerPressed="OnFileStatusClicked">
+                <!-- Toggle Buttons Bar -->
+                <Border Grid.Row="0" Background="#E8E8E8" Padding="10,5">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        
-                        <TextBlock Grid.Column="0" Text="📄" FontSize="20" 
-                                  VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding InputFileCount, StringFormat='{}{0} documents loaded'}" 
-                                      FontWeight="Bold" FontSize="14"/>
-                            <TextBlock Text="Click to view details • Drop more anytime" 
-                                      FontSize="10" Foreground="DarkBlue"/>
-                        </StackPanel>
-                        <TextBlock Grid.Column="2" Text="▼" FontSize="12" 
-                                  VerticalAlignment="Center" Foreground="DarkBlue"/>
+
+                        <!-- Output Document Toggle (Left) -->
+                        <Button Grid.Column="0" Content="◀ Output Document" 
+                               Background="{Binding IsOutputExpanded, Converter={x:Static vm:BoolToViewModeConverter.Instance}}"
+                               Foreground="White" Padding="10,5" Margin="0,0,5,0"
+                               Click="OnToggleOutputView"/>
+
+                        <!-- Input Document Toggle (Right) -->
+                        <Button Grid.Column="1" Content="Input Document ▶" 
+                               Background="{Binding IsInputExpanded, Converter={x:Static vm:BoolToViewModeConverter.Instance}}"
+                               Foreground="White" Padding="10,5" Margin="5,0,0,0"
+                               Click="OnToggleInputView"/>
                     </Grid>
                 </Border>
 
-                <!-- Document Preview Area -->
-                <Border Grid.Row="2" Background="White" BorderBrush="Gray" 
-                       BorderThickness="1" CornerRadius="5">
-                    <Grid>
-                        <!-- Drop Zone (when no documents) -->
-                        <Border Name="DropZone" Background="LightGray" 
-                               CornerRadius="5" Margin="10"
-                               IsVisible="{Binding !HasDocuments}"
-                               DragDrop.AllowDrop="True"
-                               PointerPressed="OnDocumentAreaClicked">
-                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <TextBlock Text="📁" FontSize="48" HorizontalAlignment="Center" 
-                                          Foreground="Gray"/>
-                                <TextBlock Text="Document Preview" 
-                                          FontSize="16" FontWeight="Bold" 
-                                          HorizontalAlignment="Center" Margin="0,10,0,5"/>
-                                <TextBlock Text="Drag files to chat to get started" 
+                <!-- Document Content Area -->
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="{Binding InputDocumentWidth}"/>
+                        <ColumnDefinition Width="{Binding OutputDocumentWidth}"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Input Document Panel -->
+                    <Border Grid.Column="0" Background="White" BorderBrush="LightBlue" 
+                           BorderThickness="0,0,1,0" IsVisible="{Binding IsInputVisible}">
+                        <Grid>
+                            <!-- Empty State for Input -->
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       IsVisible="{Binding !HasDocuments}">
+                                <TextBlock Text="📄" FontSize="48" HorizontalAlignment="Center" 
+                                          Foreground="LightGray" Margin="0,0,0,15"/>
+                                <TextBlock Text="Input Document" 
+                                          FontSize="18" FontWeight="Bold" 
+                                          HorizontalAlignment="Center" Foreground="DarkBlue"/>
+                                <TextBlock Text="Drag documents here" 
                                           FontSize="12" Foreground="Gray" 
-                                          HorizontalAlignment="Center"/>
+                                          HorizontalAlignment="Center" Margin="0,5,0,0"/>
                             </StackPanel>
-                        </Border>
 
-                        <!-- Document Preview (when documents loaded) -->
-                        <Grid Name="DocumentPreview" IsVisible="{Binding HasDocuments}">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
+                            <!-- Input Document Preview -->
+                            <Grid IsVisible="{Binding HasDocuments}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
 
-                            <!-- Document Navigation -->
-                            <Border Grid.Row="0" Background="DarkBlue" Padding="10">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    
-                                    <Button Grid.Column="0" Content="◀◀" 
-                                           Background="Transparent" Foreground="White"
-                                           Click="OnPreviousDocument" ToolTip.Tip="Previous Document"/>
-                                    <Button Grid.Column="1" Content="◀" 
-                                           Background="Transparent" Foreground="White"
-                                           Click="OnPreviousPage" ToolTip.Tip="Previous Page"/>
-                                    <TextBlock Grid.Column="2" 
-                                              Text="{Binding CurrentDocumentInfo}" 
-                                              Foreground="White" FontWeight="Bold"
-                                              HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    <Button Grid.Column="3" Content="▶" 
-                                           Background="Transparent" Foreground="White"
-                                           Click="OnNextPage" ToolTip.Tip="Next Page"/>
-                                    <Button Grid.Column="4" Content="▶▶" 
-                                           Background="Transparent" Foreground="White"
-                                           Click="OnNextDocument" ToolTip.Tip="Next Document"/>
-                                </Grid>
-                            </Border>
+                                <!-- Input Navigation -->
+                                <Border Grid.Row="0" Background="DarkBlue" Padding="8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <Button Grid.Column="0" Content="◀◀" 
+                                               Background="Transparent" Foreground="White" FontSize="10"
+                                               Click="OnPreviousDocument"/>
+                                        <Button Grid.Column="1" Content="◀" 
+                                               Background="Transparent" Foreground="White" FontSize="10"
+                                               Click="OnPreviousPage"/>
+                                        <TextBlock Grid.Column="2" 
+                                                  Text="{Binding CurrentDocumentInfo}" 
+                                                  Foreground="White" FontWeight="Bold" FontSize="10"
+                                                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <Button Grid.Column="3" Content="▶" 
+                                               Background="Transparent" Foreground="White" FontSize="10"
+                                               Click="OnNextPage"/>
+                                        <Button Grid.Column="4" Content="▶▶" 
+                                               Background="Transparent" Foreground="White" FontSize="10"
+                                               Click="OnNextDocument"/>
+                                    </Grid>
+                                </Border>
 
-                            <!-- Document Canvas/Preview -->
-                            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" 
-                                         VerticalScrollBarVisibility="Auto">
-                                <Canvas Name="DocumentCanvas" Background="White" 
-                                       MinWidth="400" MinHeight="500"/>
-                            </ScrollViewer>
+                                <!-- Input Canvas -->
+                                <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" 
+                                             VerticalScrollBarVisibility="Auto" Background="White">
+                                    <Canvas Name="InputDocumentCanvas" Background="White" 
+                                           MinWidth="300" MinHeight="400"/>
+                                </ScrollViewer>
 
-                            <!-- Zoom Controls -->
-                            <Border Grid.Row="2" Background="LightGray" Padding="5">
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <Button Content="−" Click="OnZoomOut" Margin="0,0,5,0"/>
-                                    <TextBlock Text="{Binding ZoomLevel, StringFormat='{}{0:P0}'}" 
-                                              VerticalAlignment="Center" Margin="10,0"/>
-                                    <Button Content="+" Click="OnZoomIn" Margin="5,0,0,0"/>
-                                    <Button Content="Fit" Click="OnZoomFit" Margin="10,0,0,0"/>
-                                </StackPanel>
-                            </Border>
-                        </Grid>
-                    </Grid>
-                </Border>
-            </Grid>
-        </Border>
-
-        <!-- Chat Panel -->
-        <Border Grid.Column="1" Background="White" BorderBrush="LightGray" 
-                BorderThickness="0,0,1,0" Padding="15">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-
-                <!-- Chat Header -->
-                <Border Grid.Row="0" Background="DarkBlue" CornerRadius="5" 
-                       Padding="15" Margin="0,0,0,15">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        
-                        <StackPanel Grid.Column="0">
-                            <TextBlock Text="🤖 AI Document Assistant" 
-                                      FontSize="18" FontWeight="Bold" 
-                                      Foreground="White"/>
-                            <TextBlock Text="Teach me through conversation and screenshots" 
-                                      FontSize="12" Foreground="LightBlue"/>
-                        </StackPanel>
-                        
-                        <Button Grid.Column="1" Content="🔄" 
-                               Background="Transparent" Foreground="White"
-                               ToolTip.Tip="Clear conversation" 
-                               Click="OnClearChat"/>
-                    </Grid>
-                </Border>
-
-                <!-- Chat Messages -->
-                <ScrollViewer Grid.Row="1" Name="ChatScrollViewer" 
-                             VerticalScrollBarVisibility="Auto" 
-                             Background="#F8F9FA" Padding="10"
-                             DragDrop.AllowDrop="True">
-                    <ItemsControl ItemsSource="{Binding ChatMessages}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Margin="0,5" Padding="12" 
-                                       Background="{Binding IsFromUser, Converter={StaticResource BoolToBackgroundConverter}}"
-                                       CornerRadius="10" 
-                                       HorizontalAlignment="{Binding IsFromUser, Converter={StaticResource BoolToAlignmentConverter}}"
-                                       MaxWidth="290">
-                                    <StackPanel>
-                                        <TextBlock Text="{Binding SenderName}" 
-                                                  FontSize="10" FontWeight="Bold" 
-                                                  Foreground="DarkBlue" Margin="0,0,0,3"/>
-                                        <TextBlock Text="{Binding Content}" 
-                                                  FontSize="12" TextWrapping="Wrap"/>
-                                        <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}" 
-                                                  FontSize="9" Foreground="Gray" 
-                                                  HorizontalAlignment="Right" Margin="0,3,0,0"/>
+                                <!-- Input Zoom Controls -->
+                                <Border Grid.Row="2" Background="LightGray" Padding="3">
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <Button Content="−" Click="OnZoomOut" FontSize="10" Padding="5,2"/>
+                                        <TextBlock Text="{Binding ZoomLevel, StringFormat='{}{0:P0}'}" 
+                                                  VerticalAlignment="Center" Margin="5,0" FontSize="10"/>
+                                        <Button Content="+" Click="OnZoomIn" FontSize="10" Padding="5,2"/>
+                                        <Button Content="Fit" Click="OnZoomFit" FontSize="10" Padding="5,2" Margin="5,0,0,0"/>
                                     </StackPanel>
                                 </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
+                            </Grid>
+                        </Grid>
+                    </Border>
 
-                <!-- Chat Input -->
-                <Grid Grid.Row="2" Margin="0,15,0,0">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
+                    <!-- Output Document Panel -->
+                    <Border Grid.Column="1" Background="White" IsVisible="{Binding IsOutputVisible}">
+                        <Grid>
+                            <!-- Empty State for Output -->
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       IsVisible="{Binding !HasTemplates}">
+                                <TextBlock Text="📊" FontSize="48" HorizontalAlignment="Center" 
+                                          Foreground="LightGray" Margin="0,0,0,15"/>
+                                <TextBlock Text="Output Document" 
+                                          FontSize="18" FontWeight="Bold" 
+                                          HorizontalAlignment="Center" Foreground="DarkGreen"/>
+                                <TextBlock Text="Load templates to preview output" 
+                                          FontSize="12" Foreground="Gray" 
+                                          HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                            </StackPanel>
 
-                    <!-- Quick Actions -->
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" 
-                               HorizontalAlignment="Center" Margin="0,0,0,10">
-                        <TextBlock Text="💡 Drop files here or " 
-                                  FontSize="11" Foreground="Gray" 
-                                  VerticalAlignment="Center"/>
-                        <Button Content="📁 Import Folder" Background="Blue" Foreground="White"
-                               Padding="6,3" Margin="2,0" FontSize="10"
-                               Click="OnImportFolderClicked"/>
-                        <TextBlock Text=" for bulk operations" 
-                                  FontSize="11" Foreground="Gray" 
-                                  VerticalAlignment="Center" Margin="0,0,8,0"/>
-                        <Button Content="🎯 Calibrate" Background="Orange" Foreground="White"
-                               Padding="8,4" Margin="2" FontSize="10"
-                               Click="OnCalibrateClicked"/>
-                        <Button Content="⚡ Process" Background="Green" Foreground="White"
-                               Padding="8,4" Margin="2" FontSize="10"
-                               Click="OnProcessClicked"/>
-                    </StackPanel>
+                            <!-- Output Preview -->
+                            <Grid IsVisible="{Binding HasTemplates}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
 
-                    <!-- Message Input -->
-                    <Grid Grid.Row="1">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        
-                        <TextBox Grid.Column="0" 
-                                Text="{Binding CurrentMessage}" 
-                                Watermark="Ask me about document extraction..."
-                                Padding="10" FontSize="12"
-                                KeyDown="OnMessageKeyDown"/>
-                        
-                        <Button Grid.Column="1" Content="📤" 
-                               Background="DarkBlue" Foreground="White"
-                               Width="40" Height="35" FontSize="14"
-                               Click="OnSendMessage"/>
-                    </Grid>
+                                <!-- Output Navigation -->
+                                <Border Grid.Row="0" Background="DarkGreen" Padding="8">
+                                    <TextBlock Text="{Binding CurrentTemplateInfo}" 
+                                              Foreground="White" FontWeight="Bold" FontSize="12"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+
+                                <!-- Output Canvas -->
+                                <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" 
+                                             VerticalScrollBarVisibility="Auto" Background="White">
+                                    <Canvas Name="OutputDocumentCanvas" Background="White" 
+                                           MinWidth="300" MinHeight="400"/>
+                                </ScrollViewer>
+                            </Grid>
+                        </Grid>
+                    </Border>
                 </Grid>
             </Grid>
         </Border>
 
-        <!-- Output Panel -->
-        <Border Grid.Column="2" Background="WhiteSmoke" Padding="15">
+        <!-- Bottom Panel Area (30% of screen) -->
+        <Border Grid.Row="1" Background="#F8F9FA" BorderBrush="LightGray" 
+               BorderThickness="0,1,0,0">
             <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="{Binding ChatPanelWidth}"/>
+                    <ColumnDefinition Width="{Binding PreviewPanelWidth}"/>
+                </Grid.ColumnDefinitions>
 
-                <!-- Output Panel Header -->
-                <TextBlock Grid.Row="0" Text="📤 Output Templates" 
-                          FontSize="18" FontWeight="Bold" 
-                          Margin="0,0,0,15"/>
-
-                <!-- Template Status Cards -->
-                <Border Grid.Row="1" Background="LightGreen" CornerRadius="8" 
-                       Padding="12" Margin="0,0,0,15" Cursor="Hand"
-                       PointerPressed="OnTemplateStatusClicked">
+                <!-- AI Chatbox Panel -->
+                <Border Grid.Column="0" Background="White" BorderBrush="LightGray" 
+                       BorderThickness="0,0,1,0" Padding="15" IsVisible="{Binding IsChatVisible}">
                     <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        
-                        <TextBlock Grid.Column="0" Text="📊" FontSize="20" 
-                                  VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding TemplateCount, StringFormat='{}{0} templates ready'}" 
-                                      FontWeight="Bold" FontSize="14"/>
-                            <TextBlock Text="Click to view mappings" 
-                                      FontSize="10" Foreground="DarkGreen"/>
-                        </StackPanel>
-                        <TextBlock Grid.Column="2" Text="▼" FontSize="12" 
-                                  VerticalAlignment="Center" Foreground="DarkGreen"/>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Chat Header with Pop-out Button -->
+                        <Border Grid.Row="0" Background="DarkBlue" CornerRadius="5" 
+                               Padding="10,5" Margin="0,0,0,10">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <TextBlock Grid.Column="0" Text="💬 AI Chatbox" 
+                                          FontSize="14" FontWeight="Bold" 
+                                          Foreground="White" VerticalAlignment="Center"/>
+                                
+                                <Button Grid.Column="1" Content="↗" 
+                                       Background="Transparent" Foreground="White"
+                                       ToolTip.Tip="Pop out chat" FontSize="12"
+                                       Click="OnPopOutChat"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Chat Messages -->
+                        <ScrollViewer Grid.Row="1" Name="ChatScrollViewer" 
+                                     VerticalScrollBarVisibility="Auto" 
+                                     HorizontalScrollBarVisibility="Disabled">
+                            <ItemsControl ItemsSource="{Binding ChatMessages}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Margin="0,3" Padding="8" 
+                                               Background="{Binding IsFromUser, Converter={StaticResource BoolToBackgroundConverter}}"
+                                               CornerRadius="8" 
+                                               HorizontalAlignment="{Binding IsFromUser, Converter={StaticResource BoolToAlignmentConverter}}"
+                                               MaxWidth="280">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding SenderName}" 
+                                                          FontSize="9" FontWeight="Bold" 
+                                                          Foreground="DarkBlue" Margin="0,0,0,2"/>
+                                                <TextBlock Text="{Binding Content}" 
+                                                          FontSize="11" TextWrapping="Wrap"/>
+                                                <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}" 
+                                                          FontSize="8" Foreground="Gray" 
+                                                          HorizontalAlignment="Right" Margin="0,2,0,0"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+
+                        <!-- Chat Input -->
+                        <Grid Grid.Row="2" Margin="0,10,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <TextBox Grid.Column="0" 
+                                    Text="{Binding CurrentMessage}" 
+                                    Watermark="Ask me anything..."
+                                    Padding="10" FontSize="12" MinHeight="40"
+                                    KeyDown="OnMessageKeyDown"/>
+                            
+                            <Button Grid.Column="1" Content="📤" 
+                                   Background="DarkBlue" Foreground="White"
+                                   Width="45" Height="40" FontSize="14"
+                                   Margin="8,0,0,0"
+                                   Click="OnSendMessage"/>
+                        </Grid>
                     </Grid>
                 </Border>
 
-                <!-- Template Preview Area -->
-                <Border Grid.Row="2" Background="White" BorderBrush="Gray" 
-                       BorderThickness="1" CornerRadius="5">
+                <!-- AI Preview Panel -->
+                <Border Grid.Column="1" Background="White" Padding="15">
                     <Grid>
-                        <!-- Empty State -->
-                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   IsVisible="{Binding !HasTemplates}">
-                            <TextBlock Text="📋" FontSize="48" HorizontalAlignment="Center" 
-                                      Foreground="Gray"/>
-                            <TextBlock Text="Template Preview" 
-                                      FontSize="16" FontWeight="Bold" 
-                                      HorizontalAlignment="Center" Margin="0,10,0,5"/>
-                            <TextBlock Text="Drop templates in chat to load" 
-                                      FontSize="12" Foreground="Gray" 
-                                      HorizontalAlignment="Center"/>
-                        </StackPanel>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
 
-                        <!-- Template Preview -->
-                        <Grid Name="TemplatePreview" IsVisible="{Binding HasTemplates}">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
+                        <!-- Preview Header -->
+                        <Border Grid.Row="0" Background="Purple" CornerRadius="5" 
+                               Padding="10,5" Margin="0,0,0,10">
+                            <TextBlock Text="🔍 AI Preview" 
+                                      FontSize="14" FontWeight="Bold" 
+                                      Foreground="White" HorizontalAlignment="Center"/>
+                        </Border>
 
-                            <!-- Template Info -->
-                            <Border Grid.Row="0" Background="Green" Padding="10">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    
-                                    <TextBlock Grid.Column="0" 
-                                              Text="{Binding CurrentTemplateInfo}" 
-                                              Foreground="White" FontWeight="Bold"
-                                              VerticalAlignment="Center"/>
-                                    <Button Grid.Column="1" Content="📊 Preview" 
-                                           Background="Transparent" Foreground="White"
-                                           Click="OnPreviewTemplate"/>
-                                </Grid>
-                            </Border>
-
-                            <!-- Template Canvas -->
-                            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" 
-                                         VerticalScrollBarVisibility="Auto">
-                                <Canvas Name="TemplateCanvas" Background="White" 
-                                       MinWidth="300" MinHeight="400"/>
-                            </ScrollViewer>
-                        </Grid>
+                        <!-- Preview Content -->
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" 
+                                     HorizontalScrollBarVisibility="Auto">
+                            <Grid>
+                                <!-- Preview Canvas for Images/Sketches -->
+                                <Canvas Name="AIPreviewCanvas" Background="White" 
+                                       MinWidth="200" MinHeight="300"/>
+                                
+                                <!-- Default Preview Content -->
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           IsVisible="{Binding !HasPreviewContent}">
+                                    <TextBlock Text="👁️" FontSize="32" HorizontalAlignment="Center" 
+                                              Foreground="LightGray" Margin="0,0,0,10"/>
+                                    <TextBlock Text="AI Visual Feedback" 
+                                              FontSize="14" FontWeight="Bold" 
+                                              HorizontalAlignment="Center" Foreground="Purple"/>
+                                    <TextBlock Text="AI will show understanding here" 
+                                              FontSize="10" Foreground="Gray" 
+                                              HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                                </StackPanel>
+                            </Grid>
+                        </ScrollViewer>
                     </Grid>
                 </Border>
             </Grid>

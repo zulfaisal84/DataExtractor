@@ -8,11 +8,35 @@ using Avalonia;
 using Avalonia.Platform.Storage;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls;
+using Avalonia.Data.Converters;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System;
 
 namespace DocumentExtractor.Desktop.ViewModels;
+
+/// <summary>
+/// Preview mode for the document interface
+/// </summary>
+public enum ViewMode
+{
+    InputOnly,
+    OutputOnly,
+    SplitView
+}
+
+/// <summary>
+/// Document workflow state for context-aware layout
+/// </summary>
+public enum DocumentState
+{
+    NoDocument,
+    DocumentLoaded,
+    AfterTeaching,
+    Processing,
+    ReviewResults
+}
 
 /// <summary>
 /// Main ViewModel for the single-tab, three-panel conversational interface
@@ -47,12 +71,57 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     private string _currentMessage = string.Empty;
 
+    [ObservableProperty]
+    private bool _hasChatMessages = false;
+
     // Document Viewing
     [ObservableProperty]
     private double _zoomLevel = 1.0;
 
     [ObservableProperty]
     private string _statusMessage = "Ready";
+
+    // View Management
+    [ObservableProperty]
+    private ViewMode _currentViewMode = ViewMode.SplitView;
+
+    [ObservableProperty]
+    private DocumentState _currentDocumentState = DocumentState.NoDocument;
+
+    [ObservableProperty]
+    private bool _showOutputPanel = false;
+
+    // New UI Layout Properties
+    [ObservableProperty]
+    private bool _isInputExpanded = false;
+
+    [ObservableProperty]
+    private bool _isOutputExpanded = false;
+
+    [ObservableProperty]
+    private bool _isInputVisible = true;
+
+    [ObservableProperty]
+    private bool _isOutputVisible = true;
+
+    [ObservableProperty]
+    private bool _isChatVisible = true;
+
+    [ObservableProperty]
+    private bool _hasPreviewContent = false;
+
+    // Grid Length Properties
+    [ObservableProperty]
+    private GridLength _inputDocumentWidth = new GridLength(1, GridUnitType.Star);
+
+    [ObservableProperty]
+    private GridLength _outputDocumentWidth = new GridLength(1, GridUnitType.Star);
+
+    [ObservableProperty]
+    private GridLength _chatPanelWidth = new GridLength(1, GridUnitType.Star);
+
+    [ObservableProperty]
+    private GridLength _previewPanelWidth = new GridLength(1, GridUnitType.Star);
 
     // Document Preview
     [ObservableProperty]
@@ -342,6 +411,7 @@ public partial class MainViewModel : ViewModelBase
                 Type = isFromUser ? ChatMessageType.User : ChatMessageType.Bot,
                 Timestamp = DateTime.Now
             });
+            HasChatMessages = ChatMessages.Count > 0;
         });
     }
 
@@ -552,6 +622,12 @@ public partial class MainViewModel : ViewModelBase
             }
             
             UpdateVisibilityFlags();
+            
+            // Update document state after successful load
+            if (HasDocuments)
+            {
+                SetDocumentState(DocumentState.DocumentLoaded);
+            }
         }
         catch (Exception ex)
         {
@@ -571,6 +647,16 @@ public partial class MainViewModel : ViewModelBase
             
             // Add user message showing the dropped file
             await AddChatMessage($"📎 {fileName}", true);
+            
+            // Check if this is a screenshot for teaching (by filename pattern)
+            if (IsTeachingScreenshot(fileName))
+            {
+                await AddChatMessage($"📸 Teaching screenshot detected: {fileName}", false);
+                await AddChatMessage("🎯 **Field Teaching Mode**", false);
+                await AddChatMessage("I can see this is a screenshot for teaching me field locations! The annotation tools for drawing colored boxes around fields are coming in Week 2 of development.", false);
+                await AddChatMessage("💡 For now, you can tell me in text what fields to extract: 'Extract the account number from the top-right' or 'Find the amount in the bottom section'", false);
+                return;
+            }
             
             // Check if this is a document file (images, PDFs) - load into preview
             if (extension is ".png" or ".jpg" or ".jpeg" or ".bmp" or ".tiff" or ".pdf")
@@ -596,6 +682,12 @@ public partial class MainViewModel : ViewModelBase
                     HasDocuments = true;
                     
                     await AddChatMessage($"✅ Loaded {fileName} ({pageCount} page{(pageCount > 1 ? "s" : "")}) into document preview!", false);
+                    
+                    // Render the document to the canvas
+                    if (DocumentCanvas != null)
+                    {
+                        await RenderCurrentDocumentAsync(DocumentCanvas);
+                    }
                     
                     if (extension == ".pdf")
                     {
@@ -633,6 +725,25 @@ public partial class MainViewModel : ViewModelBase
         {
             await AddChatMessage($"Sorry, I had trouble processing that file: {ex.Message}", false);
         }
+    }
+
+    /// <summary>
+    /// Determines if a file is a screenshot intended for teaching field locations
+    /// </summary>
+    private static bool IsTeachingScreenshot(string fileName)
+    {
+        var lowerName = fileName.ToLowerInvariant();
+        
+        // Common screenshot naming patterns
+        return lowerName.Contains("screenshot") ||
+               lowerName.Contains("screen shot") ||
+               lowerName.Contains("capture") ||
+               lowerName.StartsWith("shot") ||
+               lowerName.Contains("snap") ||
+               // macOS default pattern: "Screenshot 2025-07-10 at 11.07.04 PM.png"
+               (lowerName.StartsWith("screenshot") && lowerName.Contains("at")) ||
+               // Windows default pattern: "Screenshot (1).png"
+               lowerName.Contains("screenshot (");
     }
 
     #endregion
@@ -737,6 +848,159 @@ public partial class MainViewModel : ViewModelBase
         if (DocumentCanvas != null)
         {
             await RenderCurrentDocumentAsync(DocumentCanvas);
+        }
+    }
+
+    #endregion
+
+    #region View Mode Management
+
+    /// <summary>
+    /// Changes the current view mode
+    /// </summary>
+    public void SetViewMode(ViewMode mode)
+    {
+        CurrentViewMode = mode;
+        UpdateViewLayout();
+    }
+
+    /// <summary>
+    /// Updates the document state and automatically adjusts layout
+    /// </summary>
+    public void SetDocumentState(DocumentState state)
+    {
+        CurrentDocumentState = state;
+        UpdateViewLayoutBasedOnState();
+    }
+
+    /// <summary>
+    /// Updates the view layout based on current view mode
+    /// </summary>
+    private void UpdateViewLayout()
+    {
+        switch (CurrentViewMode)
+        {
+            case ViewMode.InputOnly:
+                ShowOutputPanel = false;
+                StatusMessage = "Viewing document";
+                break;
+            case ViewMode.OutputOnly:
+                ShowOutputPanel = true;
+                StatusMessage = "Viewing extraction results";
+                break;
+            case ViewMode.SplitView:
+                ShowOutputPanel = true;
+                StatusMessage = "Split view - document and results";
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Context-aware layout switching based on document workflow state
+    /// </summary>
+    private void UpdateViewLayoutBasedOnState()
+    {
+        switch (CurrentDocumentState)
+        {
+            case DocumentState.NoDocument:
+                SetViewMode(ViewMode.InputOnly);
+                ShowOutputPanel = false;
+                break;
+            case DocumentState.DocumentLoaded:
+                SetViewMode(ViewMode.InputOnly);
+                ShowOutputPanel = false;
+                break;
+            case DocumentState.AfterTeaching:
+                SetViewMode(ViewMode.SplitView);
+                ShowOutputPanel = true;
+                break;
+            case DocumentState.Processing:
+                SetViewMode(ViewMode.SplitView);
+                ShowOutputPanel = true;
+                break;
+            case DocumentState.ReviewResults:
+                SetViewMode(ViewMode.OutputOnly);
+                ShowOutputPanel = true;
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Cycles through view modes for toolbar toggle
+    /// </summary>
+    [RelayCommand]
+    public void CycleViewMode()
+    {
+        var nextMode = CurrentViewMode switch
+        {
+            ViewMode.InputOnly => ViewMode.SplitView,
+            ViewMode.SplitView => ViewMode.OutputOnly,
+            ViewMode.OutputOnly => ViewMode.InputOnly,
+            _ => ViewMode.InputOnly
+        };
+        SetViewMode(nextMode);
+    }
+
+    #endregion
+
+    #region New 4-Panel Layout Management
+
+    /// <summary>
+    /// Toggles input document full-screen mode
+    /// </summary>
+    public void ToggleInputView()
+    {
+        IsInputExpanded = !IsInputExpanded;
+        if (IsInputExpanded)
+        {
+            IsOutputExpanded = false;
+        }
+        UpdateLayoutDimensions();
+    }
+
+    /// <summary>
+    /// Toggles output document full-screen mode  
+    /// </summary>
+    public void ToggleOutputView()
+    {
+        IsOutputExpanded = !IsOutputExpanded;
+        if (IsOutputExpanded)
+        {
+            IsInputExpanded = false;
+        }
+        UpdateLayoutDimensions();
+    }
+
+    /// <summary>
+    /// Updates grid layout dimensions based on expanded states
+    /// </summary>
+    private void UpdateLayoutDimensions()
+    {
+        if (IsInputExpanded && !IsOutputExpanded)
+        {
+            // Input full-screen
+            InputDocumentWidth = new GridLength(1, GridUnitType.Star);
+            OutputDocumentWidth = new GridLength(0, GridUnitType.Pixel);
+            IsInputVisible = true;
+            IsOutputVisible = false;
+        }
+        else if (!IsInputExpanded && IsOutputExpanded)
+        {
+            // Output full-screen
+            InputDocumentWidth = new GridLength(0, GridUnitType.Pixel);
+            OutputDocumentWidth = new GridLength(1, GridUnitType.Star);
+            IsInputVisible = false;
+            IsOutputVisible = true;
+        }
+        else
+        {
+            // Split view (default)
+            InputDocumentWidth = new GridLength(1, GridUnitType.Star);
+            OutputDocumentWidth = new GridLength(1, GridUnitType.Star);
+            IsInputVisible = true;
+            IsOutputVisible = true;
+            IsInputExpanded = false;
+            IsOutputExpanded = false;
         }
     }
 

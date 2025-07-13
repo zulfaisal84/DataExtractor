@@ -27,8 +27,9 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 
-                <!-- Header -->
-                <Border Grid.Row="0" Background="DarkBlue" Padding="15,10">
+                <!-- Header with Drag Handle -->
+                <Border Grid.Row="0" Background="DarkBlue" Padding="15,10"
+                       Name="DragHandle" Cursor="Hand">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -36,7 +37,7 @@
                         </Grid.ColumnDefinitions>
                         
                         <StackPanel Grid.Column="0">
-                            <TextBlock Text="🤖 AI Assistant" 
+                            <TextBlock Text="🤖 AI Assistant (Drag to move)" 
                                       FontSize="16" FontWeight="Bold" 
                                       Foreground="White"/>
                             <TextBlock Text="{Binding CurrentContext, StringFormat='Context: {0}'}" 
