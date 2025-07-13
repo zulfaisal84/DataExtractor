@@ -442,11 +442,11 @@ DocumentExtractor.Desktop/
 
 ## 🎯 **PROJECT STATUS**
 
-**Current Phase**: ✅ **Week 1 Complete + Advanced Features Delivered** (July 13, 2025)
-**Technology**: Avalonia desktop app with full 4-panel layout system
-**Approach**: Single-tab conversational interface with working chat undocking
-**Timeline**: Week 1 completed successfully with bonus features
-**Next Step**: Ready for Week 2 - AI Integration Phase
+**Current Phase**: 🚀 **Week 2 Planning - File Management & Visual Intelligence** (July 13, 2025)
+**Technology**: Avalonia desktop app with advanced file handling strategy
+**Approach**: Conversational file management with visual field highlighting
+**Timeline**: Week 1 complete, Week 2 file management architecture defined
+**Next Step**: Implement panel-specific drop zones and field highlighting system
 
 ## ✅ **WEEK 1 COMPLETE - ALL ISSUES RESOLVED** (July 13, 2025)
 
@@ -745,8 +745,60 @@ Success Rate: 70% full auto, 20% assisted, 8% learned, 2% manual
 
 ---
 
-**Last Updated**: 2025-07-13 (Week 1 Complete + Advanced Features)
-**Status**: ✅ Week 1 Successfully Completed - All Major Features Working
-**Priority**: Ready for Week 2 - AI Integration and Intelligence Phase  
-**Achievements**: 4-panel layout, smart toggle buttons, chat undocking, visual polish
-**Next Phase**: OpenAI/Claude API integration, pattern learning, screenshot teaching
+## 🎯 **WEEK 2 PLANNING - FILE MANAGEMENT & VISUAL INTELLIGENCE** (July 13, 2025)
+
+### **📁 Advanced File Management Strategy**
+
+#### **🎯 Core Principles**:
+1. **Panel-Specific Drop Zones**: Clear separation of Input Documents vs Output Templates
+2. **Conversational Control**: All user interactions through chatbox only
+3. **AI Preview as Status Dashboard**: Visual display without interactive buttons
+4. **Single Pattern Per Session**: Process one document type at a time for accuracy
+5. **Visual Field Highlighting**: Real-time field detection with color-coded confidence
+
+#### **🎨 Visual Field Highlighting System**:
+- **Color-Coded Confidence**: Green (95-100%), Yellow (85-94%), Orange (70-84%), Red (<70%)
+- **Special Indicators**: Purple (user-taught), Gray (ignored fields)
+- **Real-Time Updates**: Highlights update as user teaches or corrects via chat
+- **Pattern Preview**: See exactly what will be extracted before processing
+
+#### **💬 Complete Panel Synergy**:
+```
+┌─────────────────┬─────────────────┬─────────────────┐
+│ Input Document  │ AI Chatbox      │ Output Template │
+│ [Highlighted    │ "Should I       │ [Shows mapping  │
+│  fields with    │  extract these  │  destinations]  │
+│  color boxes]   │  5 fields?"     │                 │
+├─────────────────┴─────────────────┴─────────────────┤
+│ AI Preview: Field list with confidence scores       │
+└─────────────────────────────────────────────────────┘
+```
+
+#### **🔄 Conversational Workflow**:
+1. **Drop Files** → AI categorizes and shows understanding in AI Preview
+2. **AI Describes** → Lists found fields, highlights on document
+3. **User Confirms** → Via chat: "yes", "skip due date", "that's wrong"
+4. **Visual Updates** → Highlights adjust based on conversation
+5. **Processing** → "start" command begins with progress in AI Preview
+
+#### **📋 Implementation Plan**:
+**Phase 1**: Panel-specific drop zones with visual feedback
+**Phase 2**: Field detection and highlighting system
+**Phase 3**: Conversational field management and teaching mode
+**Phase 4**: Batch processing with real-time status updates
+
+### **🎯 Week 2 Success Criteria**:
+- ✅ Clear Input/Output file separation
+- ✅ Visual field highlights with confidence colors
+- ✅ All interactions through conversational chat
+- ✅ AI Preview shows technical details and status
+- ✅ Complete preview of extraction before processing
+- ✅ Single pattern focus for optimal accuracy
+
+---
+
+**Last Updated**: 2025-07-13 (Week 2 Planning - File Management Architecture)
+**Status**: 🚀 Week 2 Planning Complete - Ready for Implementation  
+**Priority**: File management foundation for AI intelligence
+**Achievements**: Complete strategy for conversational file handling with visual intelligence
+**Next Phase**: Step-by-step implementation of file management features
