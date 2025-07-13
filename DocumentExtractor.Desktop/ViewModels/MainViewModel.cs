@@ -39,6 +39,29 @@ public enum DocumentState
 }
 
 /// <summary>
+/// Converter for Input Document border thickness based on expanded state
+/// </summary>
+public class BoolToBorderThicknessConverter : IValueConverter
+{
+    public static readonly BoolToBorderThicknessConverter Instance = new();
+    
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is bool isExpanded)
+        {
+            // When Input is expanded, no right border. When not expanded, show right border
+            return isExpanded ? new Thickness(0) : new Thickness(0, 0, 1, 0);
+        }
+        return new Thickness(0, 0, 1, 0); // Default: show right border
+    }
+    
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
 /// Main ViewModel for the single-tab, three-panel conversational interface
 /// </summary>
 public partial class MainViewModel : ViewModelBase
@@ -123,6 +146,22 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     private GridLength _previewPanelWidth = new GridLength(1, GridUnitType.Star);
 
+    // Toggle Button Properties
+    [ObservableProperty]
+    private string _inputToggleIcon = ">";
+
+    [ObservableProperty]
+    private string _outputToggleIcon = "<";
+
+    [ObservableProperty]
+    private bool _showInputToggle = true;
+
+    [ObservableProperty]
+    private bool _showOutputToggle = true;
+
+    [ObservableProperty]
+    private bool _isChatUndocked = false;
+
     // Document Preview
     [ObservableProperty]
     private int _currentPageIndex = 0;
@@ -156,6 +195,7 @@ public partial class MainViewModel : ViewModelBase
         InputFileCount = 0;
         TemplateCount = 0;
         UpdateVisibilityFlags();
+        UpdateLayoutDimensions();
     }
 
     #endregion
@@ -974,33 +1014,65 @@ public partial class MainViewModel : ViewModelBase
     /// <summary>
     /// Updates grid layout dimensions based on expanded states
     /// </summary>
-    private void UpdateLayoutDimensions()
+    public void UpdateLayoutDimensions()
     {
         if (IsInputExpanded && !IsOutputExpanded)
         {
-            // Input full-screen
+            // Input full-screen mode
             InputDocumentWidth = new GridLength(1, GridUnitType.Star);
             OutputDocumentWidth = new GridLength(0, GridUnitType.Pixel);
             IsInputVisible = true;
             IsOutputVisible = false;
+            
+            // Button behavior: Only Input button visible, shows back icon
+            ShowInputToggle = true;
+            ShowOutputToggle = false;
+            InputToggleIcon = "<<";  // Back to split view
+            OutputToggleIcon = "<";
         }
         else if (!IsInputExpanded && IsOutputExpanded)
         {
-            // Output full-screen
+            // Output full-screen mode
             InputDocumentWidth = new GridLength(0, GridUnitType.Pixel);
             OutputDocumentWidth = new GridLength(1, GridUnitType.Star);
             IsInputVisible = false;
             IsOutputVisible = true;
+            
+            // Button behavior: Only Output button visible, shows back icon
+            ShowInputToggle = false;
+            ShowOutputToggle = true;
+            InputToggleIcon = ">";
+            OutputToggleIcon = ">>";  // Back to split view (was << - this was wrong)
         }
         else
         {
-            // Split view (default)
+            // Split view (default mode)
             InputDocumentWidth = new GridLength(1, GridUnitType.Star);
             OutputDocumentWidth = new GridLength(1, GridUnitType.Star);
             IsInputVisible = true;
             IsOutputVisible = true;
             IsInputExpanded = false;
             IsOutputExpanded = false;
+            
+            // Button behavior: Both buttons visible, show expand icons
+            ShowInputToggle = true;
+            ShowOutputToggle = true;
+            InputToggleIcon = ">";
+            OutputToggleIcon = "<";
+        }
+        
+        // Handle chat undocking - AI Preview expands when chat is undocked
+        if (IsChatUndocked)
+        {
+            ChatPanelWidth = new GridLength(0, GridUnitType.Pixel);
+            PreviewPanelWidth = new GridLength(1, GridUnitType.Star);
+            IsChatVisible = false;
+        }
+        else
+        {
+            ChatPanelWidth = new GridLength(1, GridUnitType.Star);
+            PreviewPanelWidth = new GridLength(1, GridUnitType.Star);
+            IsChatVisible = true;
         }
     }
 

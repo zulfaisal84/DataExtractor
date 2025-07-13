@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using DocumentExtractor.Desktop.ViewModels;
+using DocumentExtractor.Desktop.Models;
 using System;
 using System.Linq;
 using System.IO;
@@ -227,7 +228,7 @@ public partial class MainView : UserControl
         if (DataContext is MainViewModel vm)
         {
             vm.IsInputExpanded = !vm.IsInputExpanded;
-            UpdateViewLayout(vm);
+            vm.UpdateLayoutDimensions();
         }
     }
 
@@ -236,22 +237,47 @@ public partial class MainView : UserControl
         if (DataContext is MainViewModel vm)
         {
             vm.IsOutputExpanded = !vm.IsOutputExpanded;
-            UpdateViewLayout(vm);
+            vm.UpdateLayoutDimensions();
         }
     }
 
+    private ChatWindow? _chatWindow;
+
     private void OnPopOutChat(object? sender, RoutedEventArgs e)
     {
-        // TODO: Implement pop-out window for chat in Week 2
         if (DataContext is MainViewModel vm)
         {
-            vm.ChatMessages.Add(new Models.ChatMessage
+            Console.WriteLine("🚀 Opening chat in floating window");
+            
+            // Set chat as undocked
+            vm.IsChatUndocked = true;
+            vm.UpdateLayoutDimensions();
+            
+            // Create and show floating chat window
+            _chatWindow = new ChatWindow(vm, OnDockChatBack);
+            _chatWindow.Show();
+            
+            Console.WriteLine("✅ Chat window opened and undocked");
+        }
+    }
+
+    private void OnDockChatBack()
+    {
+        if (DataContext is MainViewModel vm)
+        {
+            Console.WriteLine("🔄 Docking chat back to main window");
+            
+            // Set chat as docked
+            vm.IsChatUndocked = false;
+            vm.UpdateLayoutDimensions();
+            
+            // Clear the reference without explicitly closing (window may already be closing)
+            if (_chatWindow != null)
             {
-                Content = "Pop-out chat window coming in Week 2!",
-                SenderName = "AI Assistant",
-                Type = Models.ChatMessageType.Bot,
-                Timestamp = DateTime.Now
-            });
+                _chatWindow = null;
+            }
+            
+            Console.WriteLine("✅ Chat docked back to main window");
         }
     }
 
