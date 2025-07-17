@@ -38,28 +38,7 @@ public enum DocumentState
     ReviewResults
 }
 
-/// <summary>
-/// Converter for Input Document border thickness based on expanded state
-/// </summary>
-public class BoolToBorderThicknessConverter : IValueConverter
-{
-    public static readonly BoolToBorderThicknessConverter Instance = new();
-    
-    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-    {
-        if (value is bool isExpanded)
-        {
-            // When Input is expanded, no right border. When not expanded, show right border
-            return isExpanded ? new Thickness(0) : new Thickness(0, 0, 1, 0);
-        }
-        return new Thickness(0, 0, 1, 0); // Default: show right border
-    }
-    
-    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-    {
-        throw new NotImplementedException();
-    }
-}
+// BoolToBorderThicknessConverter removed per user request - no longer needed
 
 /// <summary>
 /// Main ViewModel for the single-tab, three-panel conversational interface
@@ -80,6 +59,18 @@ public partial class MainViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _hasTemplates = false;
+
+    [ObservableProperty]
+    private bool _hasOutputData = false;
+
+    [ObservableProperty]
+    private string _outputTableText = "";
+
+    [ObservableProperty]
+    private string _outputDataInfo = "No data generated";
+
+    [ObservableProperty]
+    private bool _canExport = false;
 
     [ObservableProperty]
     private string _currentDocumentInfo = "No document loaded";
@@ -114,12 +105,7 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     private bool _showOutputPanel = false;
 
-    // New UI Layout Properties
-    [ObservableProperty]
-    private bool _isInputExpanded = false;
-
-    [ObservableProperty]
-    private bool _isOutputExpanded = false;
+    // Layout properties simplified - always show both panels
 
     [ObservableProperty]
     private bool _isInputVisible = true;
@@ -130,8 +116,6 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isChatVisible = true;
 
-    [ObservableProperty]
-    private bool _hasPreviewContent = false;
 
     // Grid Length Properties
     [ObservableProperty]
@@ -140,13 +124,22 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     private GridLength _outputDocumentWidth = new GridLength(1, GridUnitType.Star);
 
+    // Dynamic row heights for chat undocking
     [ObservableProperty]
-    private GridLength _chatPanelWidth = new GridLength(1, GridUnitType.Star);
+    private GridLength _documentAreaHeight = new GridLength(7, GridUnitType.Star);
 
     [ObservableProperty]
-    private GridLength _previewPanelWidth = new GridLength(1, GridUnitType.Star);
+    private GridLength _chatAreaHeight = new GridLength(3, GridUnitType.Star);
 
-    // Toggle Button Properties
+
+
+    // Panel Toggle Properties
+    [ObservableProperty]
+    private bool _isInputExpanded = false;
+
+    [ObservableProperty]
+    private bool _isOutputExpanded = false;
+
     [ObservableProperty]
     private string _inputToggleIcon = ">";
 
@@ -158,6 +151,9 @@ public partial class MainViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _showOutputToggle = true;
+
+    [ObservableProperty]
+    private Thickness _inputPanelBorderThickness = new Thickness(0, 0, 1, 0);
 
     [ObservableProperty]
     private bool _isChatUndocked = false;
@@ -174,6 +170,7 @@ public partial class MainViewModel : ViewModelBase
 
     // Services
     private readonly SimpleDocumentPreviewService _documentPreviewService = new();
+    private readonly SimpleTableGeneratorService _tableGenerator = new();
     private readonly List<string> _loadedDocuments = new();
 
     #endregion
@@ -190,6 +187,9 @@ public partial class MainViewModel : ViewModelBase
             Type = ChatMessageType.Bot,
             Timestamp = DateTime.Now
         });
+
+        // Generate sample output table for testing
+        GenerateSampleOutputTable();
 
         // Initialize sample data for development
         InputFileCount = 0;
@@ -393,8 +393,62 @@ public partial class MainViewModel : ViewModelBase
 
     public async void ZoomToFit()
     {
-        ZoomLevel = 1.0;
-        await OnZoomLevelChanged();
+        if (DocumentCanvas == null || string.IsNullOrEmpty(CurrentDocumentPath))
+        {
+            ZoomLevel = 1.0;
+            await OnZoomLevelChanged();
+            return;
+        }
+
+        // Get the actual document width from the preview service at 100% zoom
+        var actualDocumentWidth = _documentPreviewService.GetDocumentWidth(CurrentDocumentPath);
+        
+        if (actualDocumentWidth <= 0)
+        {
+            // Fallback if we can't get document dimensions
+            ZoomLevel = 1.0;
+            await OnZoomLevelChanged();
+            return;
+        }
+
+        // Calculate available width based on the grid layout state
+        // Use fixed realistic panel widths to avoid the canvas feedback loop
+        double availableWidth;
+        
+        if (IsInputExpanded)
+        {
+            // Input panel is expanded - assume typical window width of 1400px
+            availableWidth = 1300; // Full window width minus margins/borders
+        }
+        else if (IsOutputExpanded)
+        {
+            // Output panel is expanded - input panel is hidden, so no fit needed
+            Console.WriteLine("[DEBUG] ZoomToFit: Output panel expanded - input panel not visible");
+            return;
+        }
+        else
+        {
+            // Split view - assume half of typical window width
+            availableWidth = 650; // Half window width minus borders/margins
+        }
+        
+        // Calculate zoom to fit document width to available panel width
+        var optimalZoom = availableWidth / actualDocumentWidth;
+        
+        // Clamp zoom between reasonable limits (min 25%, max 300%)
+        var newZoomLevel = Math.Max(0.25, Math.Min(3.0, optimalZoom));
+        
+        // Only update if zoom level actually changes to avoid unnecessary re-renders
+        if (Math.Abs(ZoomLevel - newZoomLevel) > 0.01)
+        {
+            ZoomLevel = newZoomLevel;
+            Console.WriteLine($"[DEBUG] ZoomToFit: Mode: {(IsInputExpanded ? "Input Expanded" : "Split View")}, Available width: {availableWidth}, Document width: {actualDocumentWidth}, Setting zoom: {ZoomLevel}");
+            await OnZoomLevelChanged();
+        }
+        else
+        {
+            Console.WriteLine($"[DEBUG] ZoomToFit: Already at optimal zoom ({ZoomLevel:F3}), no change needed");
+        }
     }
 
     #endregion
@@ -440,7 +494,7 @@ public partial class MainViewModel : ViewModelBase
         await AddChatMessage(response, false);
     }
 
-    private async Task AddChatMessage(string content, bool isFromUser)
+    public async Task AddChatMessage(string content, bool isFromUser)
     {
         await Task.Run(() =>
         {
@@ -538,6 +592,126 @@ public partial class MainViewModel : ViewModelBase
     #endregion
 
     #region Drag and Drop Support
+
+    /// <summary>
+    /// Handles input documents dropped into the Input Document panel
+    /// </summary>
+    public async Task HandleInputDocuments(IEnumerable<string> filePaths)
+    {
+        try
+        {
+            var validFiles = filePaths.Where(f => IsInputDocumentType(f)).ToList();
+            
+            if (!validFiles.Any())
+            {
+                await AddChatMessage("❌ No valid input documents found. Supported formats: PDF, PNG, JPG, TIFF, BMP", false);
+                return;
+            }
+
+            var fileCount = validFiles.Count;
+            
+            // Process input documents
+            foreach (var filePath in validFiles)
+            {
+                var fileName = System.IO.Path.GetFileName(filePath);
+                
+                // Load the document into the preview system
+                _loadedDocuments.Add(filePath);
+                
+                // Load document for preview
+                var pageCount = await _documentPreviewService.LoadDocumentAsync(filePath);
+                if (pageCount > 0)
+                {
+                    // Always set as current document (latest file becomes active)
+                    CurrentDocumentPath = filePath;
+                    CurrentPageIndex = 0;
+                    TotalPages = pageCount;
+                    
+                    // Update document info to show position (1-based indexing)
+                    var currentIndex = _loadedDocuments.Count;
+                    CurrentDocumentInfo = $"{fileName} ({currentIndex} of {_loadedDocuments.Count})";
+                    
+                    // Update counters
+                    InputFileCount = _loadedDocuments.Count;
+                    HasDocuments = true;
+                }
+            }
+            
+            if (fileCount == 1)
+            {
+                await AddChatMessage($"✅ Loaded {validFiles[0].Split('/').Last()} for processing.", false);
+            }
+            else
+            {
+                await AddChatMessage($"✅ Loaded {fileCount} input documents successfully!", false);
+            }
+            
+            UpdateVisibilityFlags();
+            SetDocumentState(DocumentState.DocumentLoaded);
+        }
+        catch (Exception ex)
+        {
+            await AddChatMessage($"Sorry, I had trouble processing the input documents: {ex.Message}", false);
+        }
+    }
+
+    /// <summary>
+    /// Handles output templates dropped into the Output Document panel
+    /// </summary>
+    public async Task HandleOutputTemplates(IEnumerable<string> filePaths)
+    {
+        try
+        {
+            var validFiles = filePaths.Where(f => IsOutputTemplateType(f)).ToList();
+            
+            if (!validFiles.Any())
+            {
+                await AddChatMessage("❌ No valid Excel templates found. Supported formats: XLSX, XLS", false);
+                return;
+            }
+
+            // For now, handle only the first template (single pattern per session)
+            var templateFile = validFiles.First();
+            var fileName = System.IO.Path.GetFileName(templateFile);
+            
+            // Load the Excel template into the preview service with canvas dimensions
+            // Use default large canvas size if canvas isn't initialized yet
+            var canvasWidth = OutputCanvas != null && OutputCanvas.Width > 0 ? (int)OutputCanvas.Width : 1400;
+            var canvasHeight = OutputCanvas != null && OutputCanvas.Height > 0 ? (int)OutputCanvas.Height : 900;
+            Console.WriteLine($"[DEBUG] Using canvas dimensions: {canvasWidth}x{canvasHeight} for Excel rendering");
+            var pageCount = await _documentPreviewService.LoadDocumentAsync(templateFile, canvasWidth, canvasHeight);
+            if (pageCount > 0)
+            {
+                TemplateCount = 1;
+                HasTemplates = true;
+                CurrentTemplateInfo = fileName;
+                
+                // Render to output canvas if available
+                if (OutputCanvas != null)
+                {
+                    await _documentPreviewService.RenderPageToCanvasAsync(templateFile, 0, OutputCanvas);
+                }
+                
+                await AddChatMessage($"✅ Loaded template: {fileName} with preview. Ready for data extraction mapping!", false);
+            }
+            else
+            {
+                await AddChatMessage($"❌ Failed to load template preview for {fileName}", false);
+                return;
+            }
+            
+            if (validFiles.Count > 1)
+            {
+                await AddChatMessage($"ℹ️ Note: Multiple templates detected, but I'm using '{fileName}' for this session. Use 'New Session' to switch templates.", false);
+            }
+            
+            UpdateVisibilityFlags();
+        }
+        catch (Exception ex)
+        {
+            await AddChatMessage($"Sorry, I had trouble processing the output template: {ex.Message}", false);
+        }
+    }
 
     /// <summary>
     /// Handles multiple files dropped into the chat area for teaching/learning
@@ -729,14 +903,7 @@ public partial class MainViewModel : ViewModelBase
                         await RenderCurrentDocumentAsync(DocumentCanvas);
                     }
                     
-                    if (extension == ".pdf")
-                    {
-                        await AddChatMessage("💡 PDF preview shows placeholder for now. You can still tell me what to extract from it!", false);
-                    }
-                    else
-                    {
-                        await AddChatMessage("💡 You can now see the document in the preview panel! Tell me what fields to extract or click areas to teach me.", false);
-                    }
+                    await AddChatMessage("💡 You can now see the document in the preview panel! Tell me what fields to extract or click areas to teach me.", false);
                 }
                 else
                 {
@@ -856,20 +1023,32 @@ public partial class MainViewModel : ViewModelBase
         return extension is ".png" or ".jpg" or ".jpeg" or ".pdf" or ".xlsx" or ".xls" or ".tiff" or ".bmp";
     }
 
+    private static bool IsInputDocumentType(string filePath)
+    {
+        var extension = System.IO.Path.GetExtension(filePath).ToLowerInvariant();
+        return extension is ".png" or ".jpg" or ".jpeg" or ".pdf" or ".tiff" or ".bmp";
+    }
+
+    private static bool IsOutputTemplateType(string filePath)
+    {
+        var extension = System.IO.Path.GetExtension(filePath).ToLowerInvariant();
+        return extension is ".xlsx" or ".xls";
+    }
+
     #endregion
 
     #region Document Preview Methods
 
     /// <summary>
-    /// Renders the current document page to the specified canvas
+    /// Renders all pages of the current document to the specified canvas for scrollable view
     /// </summary>
     public async Task RenderCurrentDocumentAsync(Canvas canvas)
     {
         if (!string.IsNullOrEmpty(CurrentDocumentPath))
         {
-            await _documentPreviewService.RenderPageToCanvasAsync(
+            // Use new all-pages rendering for scrollable view
+            await _documentPreviewService.RenderAllPagesToCanvasAsync(
                 CurrentDocumentPath, 
-                CurrentPageIndex, 
                 canvas, 
                 ZoomLevel);
         }
@@ -879,6 +1058,11 @@ public partial class MainViewModel : ViewModelBase
     /// Gets the canvas reference for document rendering
     /// </summary>
     public Canvas? DocumentCanvas { get; set; }
+
+    /// <summary>
+    /// Gets the canvas reference for output template rendering
+    /// </summary>
+    public Canvas? OutputCanvas { get; set; }
 
     /// <summary>
     /// Called when zoom level changes to re-render the document
@@ -911,6 +1095,45 @@ public partial class MainViewModel : ViewModelBase
     {
         CurrentDocumentState = state;
         UpdateViewLayoutBasedOnState();
+    }
+
+    /// <summary>
+    /// Generate sample output table for demonstration
+    /// </summary>
+    private void GenerateSampleOutputTable()
+    {
+        // Sample field mappings
+        var fieldMappings = new Dictionary<string, string>
+        {
+            { "A", "Invoice #" },
+            { "B", "Amount" },
+            { "C", "Date" },
+            { "D", "Customer" }
+        };
+
+        // Sample data
+        var sampleData = new Dictionary<string, List<string>>
+        {
+            { "Invoice #", new List<string> { "INV-2024-001", "INV-2024-002", "INV-2024-003", "INV-2024-004" } },
+            { "Amount", new List<string> { "$1,234.56", "$567.89", "$890.12", "$2,345.67" } },
+            { "Date", new List<string> { "15/07/2024", "16/07/2024", "17/07/2024", "18/07/2024" } },
+            { "Customer", new List<string> { "ABC Corp", "XYZ Ltd", "Tech Inc", "Global Co" } }
+        };
+
+        // Generate the table
+        OutputTableText = _tableGenerator.GenerateExcelPreviewTable(fieldMappings, sampleData);
+        HasOutputData = true;
+        OutputDataInfo = "4 documents processed";
+        CanExport = true;
+    }
+
+    /// <summary>
+    /// Export the analysis results to Excel
+    /// </summary>
+    [RelayCommand]
+    private async Task ExportToExcel()
+    {
+        await AddChatMessage("Excel export feature coming soon! This will save the extracted data to an Excel file.", false);
     }
 
     /// <summary>
@@ -965,9 +1188,7 @@ public partial class MainViewModel : ViewModelBase
         }
     }
 
-    /// <summary>
-    /// Cycles through view modes for toolbar toggle
-    /// </summary>
+
     [RelayCommand]
     public void CycleViewMode()
     {
@@ -986,92 +1207,83 @@ public partial class MainViewModel : ViewModelBase
     #region New 4-Panel Layout Management
 
     /// <summary>
-    /// Toggles input document full-screen mode
+    /// Toggles the input panel between expanded and split view
     /// </summary>
     public void ToggleInputView()
     {
         IsInputExpanded = !IsInputExpanded;
-        if (IsInputExpanded)
-        {
-            IsOutputExpanded = false;
-        }
         UpdateLayoutDimensions();
     }
 
     /// <summary>
-    /// Toggles output document full-screen mode  
+    /// Toggles the output panel between expanded and split view
     /// </summary>
     public void ToggleOutputView()
     {
         IsOutputExpanded = !IsOutputExpanded;
-        if (IsOutputExpanded)
-        {
-            IsInputExpanded = false;
-        }
         UpdateLayoutDimensions();
     }
 
     /// <summary>
-    /// Updates grid layout dimensions based on expanded states
+    /// Updates grid layout dimensions based on panel toggle states
     /// </summary>
     public void UpdateLayoutDimensions()
     {
-        if (IsInputExpanded && !IsOutputExpanded)
+        // Handle panel expansions
+        if (IsInputExpanded)
         {
-            // Input full-screen mode
+            // Input panel expanded - hide output
             InputDocumentWidth = new GridLength(1, GridUnitType.Star);
             OutputDocumentWidth = new GridLength(0, GridUnitType.Pixel);
             IsInputVisible = true;
             IsOutputVisible = false;
             
-            // Button behavior: Only Input button visible, shows back icon
+            InputToggleIcon = "<<";
             ShowInputToggle = true;
             ShowOutputToggle = false;
-            InputToggleIcon = "<<";  // Back to split view
-            OutputToggleIcon = "<";
+            InputPanelBorderThickness = new Thickness(0);
         }
-        else if (!IsInputExpanded && IsOutputExpanded)
+        else if (IsOutputExpanded)
         {
-            // Output full-screen mode
+            // Output panel expanded - hide input
             InputDocumentWidth = new GridLength(0, GridUnitType.Pixel);
             OutputDocumentWidth = new GridLength(1, GridUnitType.Star);
             IsInputVisible = false;
             IsOutputVisible = true;
             
-            // Button behavior: Only Output button visible, shows back icon
+            OutputToggleIcon = ">>";
             ShowInputToggle = false;
             ShowOutputToggle = true;
-            InputToggleIcon = ">";
-            OutputToggleIcon = ">>";  // Back to split view (was << - this was wrong)
+            InputPanelBorderThickness = new Thickness(0);
         }
         else
         {
-            // Split view (default mode)
+            // Split view - show both panels
             InputDocumentWidth = new GridLength(1, GridUnitType.Star);
             OutputDocumentWidth = new GridLength(1, GridUnitType.Star);
             IsInputVisible = true;
             IsOutputVisible = true;
-            IsInputExpanded = false;
-            IsOutputExpanded = false;
             
-            // Button behavior: Both buttons visible, show expand icons
-            ShowInputToggle = true;
-            ShowOutputToggle = true;
             InputToggleIcon = ">";
             OutputToggleIcon = "<";
+            ShowInputToggle = true;
+            ShowOutputToggle = true;
+            InputPanelBorderThickness = new Thickness(0, 0, 1, 0);
         }
         
-        // Handle chat undocking - AI Preview expands when chat is undocked
+        // Handle chat undocking - Input and Analysis panels expand when chat is undocked
         if (IsChatUndocked)
         {
-            ChatPanelWidth = new GridLength(0, GridUnitType.Pixel);
-            PreviewPanelWidth = new GridLength(1, GridUnitType.Star);
+            // Chat is undocked, so document area takes full height and chat area collapses
+            DocumentAreaHeight = new GridLength(1, GridUnitType.Star);
+            ChatAreaHeight = new GridLength(0, GridUnitType.Pixel);
             IsChatVisible = false;
         }
         else
         {
-            ChatPanelWidth = new GridLength(1, GridUnitType.Star);
-            PreviewPanelWidth = new GridLength(1, GridUnitType.Star);
+            // Chat is docked, normal 70/30 split
+            DocumentAreaHeight = new GridLength(7, GridUnitType.Star);
+            ChatAreaHeight = new GridLength(3, GridUnitType.Star);
             IsChatVisible = true;
         }
     }

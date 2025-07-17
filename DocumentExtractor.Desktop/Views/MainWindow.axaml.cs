@@ -51,6 +51,13 @@ public partial class MainWindow : Window
         }
     }
     
+    private void OpenExcelTestWindow(object? sender, RoutedEventArgs e)
+    {
+        var testWindow = new ExcelTestWindow();
+        testWindow.Show();
+        Console.WriteLine("🧪 Excel Test Window opened");
+    }
+    
     /// <summary>
     /// Handle tab selection changes to update AI Assistant context
     /// </summary>

@@ -7,6 +7,7 @@ using System;
 using System.Linq;
 using System.IO;
 using System.Threading.Tasks;
+using Avalonia;
 
 namespace DocumentExtractor.Desktop.Views;
 
@@ -38,6 +39,13 @@ public partial class MainView : UserControl
                     vm.DocumentCanvas = oldCanvas;
                 }
             }
+
+            // Set up output canvas reference for Excel template rendering
+            var outputCanvas = this.FindControl<Canvas>("OutputDocumentCanvas");
+            if (outputCanvas != null)
+            {
+                vm.OutputCanvas = outputCanvas;
+            }
         }
         
         // Set up global drag-and-drop after control loads
@@ -47,6 +55,7 @@ public partial class MainView : UserControl
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
         SetupGlobalDragDrop();
+        SetupPanelSpecificDragDrop();
     }
     
     /// <summary>
@@ -58,6 +67,29 @@ public partial class MainView : UserControl
         this.AddHandler(DragDrop.DragOverEvent, OnGlobalDragOver);
         this.AddHandler(DragDrop.DropEvent, OnGlobalDrop);
         Console.WriteLine("✅ Global drag-and-drop handlers registered");
+    }
+
+    /// <summary>
+    /// Set up panel-specific drag-and-drop handlers
+    /// </summary>
+    private void SetupPanelSpecificDragDrop()
+    {
+        var inputPanel = this.FindControl<Border>("InputDocumentPanel");
+        var outputPanel = this.FindControl<Border>("OutputDocumentPanel");
+
+        if (inputPanel != null)
+        {
+            inputPanel.AddHandler(DragDrop.DragOverEvent, OnInputPanelDragOver);
+            inputPanel.AddHandler(DragDrop.DropEvent, OnInputPanelDrop);
+            Console.WriteLine("✅ Input panel drag-and-drop handlers registered");
+        }
+
+        if (outputPanel != null)
+        {
+            outputPanel.AddHandler(DragDrop.DragOverEvent, OnOutputPanelDragOver);
+            outputPanel.AddHandler(DragDrop.DropEvent, OnOutputPanelDrop);
+            Console.WriteLine("✅ Output panel drag-and-drop handlers registered");
+        }
     }
 
     #region Global Drag and Drop Events
@@ -130,45 +162,179 @@ public partial class MainView : UserControl
         return extension is ".png" or ".jpg" or ".jpeg" or ".pdf" or ".xlsx" or ".xls" or ".tiff" or ".bmp";
     }
 
+    private static bool IsInputDocumentType(string filePath)
+    {
+        var extension = Path.GetExtension(filePath).ToLowerInvariant();
+        return extension is ".png" or ".jpg" or ".jpeg" or ".pdf" or ".tiff" or ".bmp";
+    }
+
+    private static bool IsOutputTemplateType(string filePath)
+    {
+        var extension = Path.GetExtension(filePath).ToLowerInvariant();
+        return extension is ".xlsx" or ".xls";
+    }
+
     #endregion
 
-    #region Document Navigation
+    #region Panel-Specific Drag and Drop Events
 
-    private async void OnPreviousDocument(object? sender, RoutedEventArgs e)
+    private void OnInputPanelDragOver(object? sender, DragEventArgs e)
     {
-        if (DataContext is MainViewModel vm)
+        Console.WriteLine("🔍 Input panel drag detected");
+        
+        if (e.Data.Contains(DataFormats.Files) && sender is Border inputPanel)
         {
-            vm.NavigateToPreviousDocument();
-            await RenderCurrentDocument();
+            var files = e.Data.GetFiles();
+            if (files != null)
+            {
+                var hasValidInputFiles = files.Any(f => IsInputDocumentType(f.Path.LocalPath));
+                var hasInvalidFiles = files.Any(f => !IsInputDocumentType(f.Path.LocalPath) && IsValidFileType(f.Path.LocalPath));
+                
+                if (hasValidInputFiles && !hasInvalidFiles)
+                {
+                    // All files are valid input documents
+                    e.DragEffects = DragDropEffects.Copy;
+                    inputPanel.BorderBrush = Avalonia.Media.Brushes.Green;
+                    inputPanel.BorderThickness = new Thickness(3);
+                    Console.WriteLine("✅ Valid input files - showing green border");
+                }
+                else if (hasInvalidFiles)
+                {
+                    // Wrong file types for input panel
+                    e.DragEffects = DragDropEffects.None;
+                    inputPanel.BorderBrush = Avalonia.Media.Brushes.Red;
+                    inputPanel.BorderThickness = new Thickness(3);
+                    Console.WriteLine("❌ Invalid files for input panel - showing red border");
+                }
+                else
+                {
+                    e.DragEffects = DragDropEffects.None;
+                }
+            }
+        }
+        else
+        {
+            e.DragEffects = DragDropEffects.None;
         }
     }
 
-    private async void OnNextDocument(object? sender, RoutedEventArgs e)
+    private async void OnInputPanelDrop(object? sender, DragEventArgs e)
     {
-        if (DataContext is MainViewModel vm)
+        Console.WriteLine("🎯 Input panel drop triggered!");
+        
+        // Reset visual feedback
+        if (sender is Border inputPanel)
         {
-            vm.NavigateToNextDocument();
-            await RenderCurrentDocument();
+            inputPanel.BorderBrush = Avalonia.Media.Brushes.LightBlue;
+            inputPanel.BorderThickness = new Thickness(0, 0, 1, 0);
+        }
+
+        if (e.Data.Contains(DataFormats.Files) && DataContext is MainViewModel vm)
+        {
+            var files = e.Data.GetFiles();
+            if (files != null)
+            {
+                var inputFiles = files.Where(f => IsInputDocumentType(f.Path.LocalPath))
+                                     .Select(f => f.Path.LocalPath)
+                                     .ToList();
+                
+                if (inputFiles.Any())
+                {
+                    Console.WriteLine($"📋 Processing {inputFiles.Count} input document(s)");
+                    await vm.HandleInputDocuments(inputFiles);
+                    
+                    // Render the document
+                    if (vm.DocumentCanvas != null)
+                    {
+                        await vm.RenderCurrentDocumentAsync(vm.DocumentCanvas);
+                    }
+                }
+                else
+                {
+                    await vm.AddChatMessage("❌ No valid input documents found. Please drop PDFs or images.", false);
+                }
+            }
         }
     }
 
-    private async void OnPreviousPage(object? sender, RoutedEventArgs e)
+    private void OnOutputPanelDragOver(object? sender, DragEventArgs e)
     {
-        if (DataContext is MainViewModel vm)
+        Console.WriteLine("🔍 Output panel drag detected");
+        
+        if (e.Data.Contains(DataFormats.Files) && sender is Border outputPanel)
         {
-            vm.NavigateToPreviousPage();
-            await RenderCurrentDocument();
+            var files = e.Data.GetFiles();
+            if (files != null)
+            {
+                var hasValidOutputFiles = files.Any(f => IsOutputTemplateType(f.Path.LocalPath));
+                var hasInvalidFiles = files.Any(f => !IsOutputTemplateType(f.Path.LocalPath) && IsValidFileType(f.Path.LocalPath));
+                
+                if (hasValidOutputFiles && !hasInvalidFiles)
+                {
+                    // All files are valid output templates
+                    e.DragEffects = DragDropEffects.Copy;
+                    outputPanel.BorderBrush = Avalonia.Media.Brushes.Green;
+                    outputPanel.BorderThickness = new Thickness(3);
+                    Console.WriteLine("✅ Valid output templates - showing green border");
+                }
+                else if (hasInvalidFiles)
+                {
+                    // Wrong file types for output panel
+                    e.DragEffects = DragDropEffects.None;
+                    outputPanel.BorderBrush = Avalonia.Media.Brushes.Red;
+                    outputPanel.BorderThickness = new Thickness(3);
+                    Console.WriteLine("❌ Invalid files for output panel - showing red border");
+                }
+                else
+                {
+                    e.DragEffects = DragDropEffects.None;
+                }
+            }
+        }
+        else
+        {
+            e.DragEffects = DragDropEffects.None;
         }
     }
 
-    private async void OnNextPage(object? sender, RoutedEventArgs e)
+    private async void OnOutputPanelDrop(object? sender, DragEventArgs e)
     {
-        if (DataContext is MainViewModel vm)
+        Console.WriteLine("🎯 Output panel drop triggered!");
+        
+        // Reset visual feedback
+        if (sender is Border outputPanel)
         {
-            vm.NavigateToNextPage();
-            await RenderCurrentDocument();
+            outputPanel.BorderBrush = Avalonia.Media.Brushes.LightGreen;
+            outputPanel.BorderThickness = new Thickness(0);
+        }
+
+        if (e.Data.Contains(DataFormats.Files) && DataContext is MainViewModel vm)
+        {
+            var files = e.Data.GetFiles();
+            if (files != null)
+            {
+                var templateFiles = files.Where(f => IsOutputTemplateType(f.Path.LocalPath))
+                                        .Select(f => f.Path.LocalPath)
+                                        .ToList();
+                
+                if (templateFiles.Any())
+                {
+                    Console.WriteLine($"📋 Processing {templateFiles.Count} output template(s)");
+                    await vm.HandleOutputTemplates(templateFiles);
+                }
+                else
+                {
+                    await vm.AddChatMessage("❌ No valid Excel templates found. Please drop .xlsx or .xls files.", false);
+                }
+            }
         }
     }
+
+    #endregion
+
+    #region Document Navigation - Removed per user request
+
+    // Navigation event handlers removed per user request
 
     #endregion
 
@@ -223,21 +389,19 @@ public partial class MainView : UserControl
 
     #region New 4-Panel Layout Events
 
-    private void OnToggleInputView(object? sender, RoutedEventArgs e)
+    private void OnToggleInputView(object? sender, Avalonia.Input.PointerPressedEventArgs e)
     {
         if (DataContext is MainViewModel vm)
         {
-            vm.IsInputExpanded = !vm.IsInputExpanded;
-            vm.UpdateLayoutDimensions();
+            vm.ToggleInputView();
         }
     }
 
-    private void OnToggleOutputView(object? sender, RoutedEventArgs e)
+    private void OnToggleOutputView(object? sender, Avalonia.Input.PointerPressedEventArgs e)
     {
         if (DataContext is MainViewModel vm)
         {
-            vm.IsOutputExpanded = !vm.IsOutputExpanded;
-            vm.UpdateLayoutDimensions();
+            vm.ToggleOutputView();
         }
     }
 
@@ -281,36 +445,7 @@ public partial class MainView : UserControl
         }
     }
 
-    private void UpdateViewLayout(MainViewModel vm)
-    {
-        // Update grid column definitions based on expanded states
-        if (vm.IsInputExpanded && !vm.IsOutputExpanded)
-        {
-            // Input full-screen
-            vm.InputDocumentWidth = new GridLength(1, GridUnitType.Star);
-            vm.OutputDocumentWidth = new GridLength(0, GridUnitType.Pixel);
-            vm.IsInputVisible = true;
-            vm.IsOutputVisible = false;
-        }
-        else if (!vm.IsInputExpanded && vm.IsOutputExpanded)
-        {
-            // Output full-screen  
-            vm.InputDocumentWidth = new GridLength(0, GridUnitType.Pixel);
-            vm.OutputDocumentWidth = new GridLength(1, GridUnitType.Star);
-            vm.IsInputVisible = false;
-            vm.IsOutputVisible = true;
-        }
-        else
-        {
-            // Split view (default)
-            vm.InputDocumentWidth = new GridLength(1, GridUnitType.Star);
-            vm.OutputDocumentWidth = new GridLength(1, GridUnitType.Star);
-            vm.IsInputVisible = true;
-            vm.IsOutputVisible = true;
-            vm.IsInputExpanded = false;
-            vm.IsOutputExpanded = false;
-        }
-    }
+    // UpdateViewLayout method removed - layout is now handled by UpdateLayoutDimensions in ViewModel
 
     #endregion
 

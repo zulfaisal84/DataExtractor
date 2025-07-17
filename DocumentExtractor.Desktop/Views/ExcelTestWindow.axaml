@@ -1,0 +1,84 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="DocumentExtractor.Desktop.Views.ExcelTestWindow"
+        Title="Excel Rendering Test Window"
+        Width="1600" Height="1000"
+        WindowStartupLocation="CenterScreen">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Controls Panel -->
+        <Border Grid.Row="0" Background="LightBlue" Padding="10">
+            <StackPanel Orientation="Horizontal" Spacing="15">
+                
+                <!-- File Loading -->
+                <Button Name="LoadFileButton" Content="📁 Load Excel File" 
+                        Background="Green" Foreground="White" Padding="10,5"/>
+                
+                <TextBlock Name="FileNameText" Text="No file loaded" 
+                          VerticalAlignment="Center" FontWeight="Bold"/>
+                
+                <!-- Canvas Size Controls -->
+                <Border Background="White" Padding="8" CornerRadius="3">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="Canvas:" VerticalAlignment="Center"/>
+                        <ComboBox Name="CanvasSizeCombo" SelectedIndex="2" MinWidth="120">
+                            <ComboBoxItem>800 × 600</ComboBoxItem>
+                            <ComboBoxItem>1200 × 800</ComboBoxItem>
+                            <ComboBoxItem>1400 × 900</ComboBoxItem>
+                            <ComboBoxItem>1600 × 1000</ComboBoxItem>
+                        </ComboBox>
+                    </StackPanel>
+                </Border>
+                
+                <!-- Cell Count Controls -->
+                <Border Background="White" Padding="8" CornerRadius="3">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="Cells:" VerticalAlignment="Center"/>
+                        <ComboBox Name="CellCountCombo" SelectedIndex="1" MinWidth="100">
+                            <ComboBoxItem>4 × 3</ComboBoxItem>
+                            <ComboBoxItem>6 × 4</ComboBoxItem>
+                            <ComboBoxItem>8 × 5</ComboBoxItem>
+                            <ComboBoxItem>10 × 6</ComboBoxItem>
+                        </ComboBox>
+                    </StackPanel>
+                </Border>
+                
+                <!-- Render Button -->
+                <Button Name="RenderButton" Content="🎨 Render" 
+                        Background="Blue" Foreground="White" Padding="10,5"
+                        IsEnabled="False"/>
+                        
+            </StackPanel>
+        </Border>
+
+        <!-- Main Canvas Area -->
+        <Border Grid.Row="1" Background="Gray" Margin="10">
+            <ScrollViewer Name="CanvasScrollViewer" 
+                         HorizontalScrollBarVisibility="Auto" 
+                         VerticalScrollBarVisibility="Auto">
+                <Canvas Name="TestCanvas" 
+                       Background="White" 
+                       Width="1400" Height="900"/>
+            </ScrollViewer>
+        </Border>
+
+        <!-- Debug Info -->
+        <Border Grid.Row="2" Background="DarkBlue" Padding="10">
+            <StackPanel Spacing="5">
+                <TextBlock Name="DebugInfo" Text="Debug: Ready to load Excel file" 
+                          Foreground="White" FontFamily="Consolas"/>
+                <TextBlock Name="BitmapInfo" Text="Bitmap: Not created yet" 
+                          Foreground="Yellow" FontFamily="Consolas"/>
+                <TextBlock Name="CellInfo" Text="Cells: Not calculated yet" 
+                          Foreground="Cyan" FontFamily="Consolas"/>
+            </StackPanel>
+        </Border>
+
+    </Grid>
+</Window>

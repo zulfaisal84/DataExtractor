@@ -70,10 +70,10 @@
                               Foreground="LightGray"/>
                 </StackPanel>
                 
-                <Button Grid.Column="1" Content="⚙️ Settings" 
-                       Command="{Binding OpenSettingsCommand}"
-                       Background="Gray" Foreground="White"
-                       Margin="10,0" Padding="10,5" FontSize="12"/>
+                <Button Grid.Column="1" Content="🧪 Excel Test" 
+                       Background="Purple" Foreground="White"
+                       Margin="10,0" Padding="10,5" FontSize="12"
+                       Click="OpenExcelTestWindow"/>
                 
                 <Button Grid.Column="2" Content="🪟 Minimize" 
                        Background="Orange" Foreground="White"
