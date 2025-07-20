@@ -472,26 +472,23 @@ public partial class MainViewModel : ViewModelBase
 
     private async Task ProcessAIResponse(string userMessage)
     {
-        await Task.Delay(500); // Simulate thinking time
-
-        string response = userMessage.ToLower() switch
+        try
         {
-            var msg when msg.Contains("hello") || msg.Contains("hi") => 
-                "Hello! I'm ready to help you extract data from documents. Upload some files and let's get started!",
+            // Use AIService for intelligent responses
+            var aiService = new Services.AIService();
             
-            var msg when msg.Contains("help") => 
-                "I can help you extract data from documents using screenshots. Here's how:\n1. Upload documents\n2. Take screenshots showing me where fields are\n3. I'll learn and extract similar data from other documents",
+            // Build context with loaded documents
+            var documentPaths = HasDocuments ? _loadedDocuments.ToList() : null;
+            var context = HasDocuments ? "MainView - Documents Loaded" : "MainView - No Documents";
             
-            var msg when msg.Contains("screenshot") => 
-                "Great! Click the 📸 Screenshot button and then draw boxes around the fields you want me to extract. I'll learn from your examples.",
-            
-            var msg when msg.Contains("extract") => 
-                "I can extract various fields like amounts, dates, names, addresses, etc. Show me examples using screenshots and I'll learn the patterns.",
-            
-            _ => "I understand you want to work with document extraction. Try uploading some documents first, then show me what fields to extract using screenshots."
-        };
-
-        await AddChatMessage(response, false);
+            var response = await aiService.ProcessChatMessageAsync(userMessage, context, documentPaths);
+            await AddChatMessage(response, false);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error processing AI response: {ex.Message}");
+            await AddChatMessage("I encountered an error processing your request. Please try again.", false);
+        }
     }
 
     public async Task AddChatMessage(string content, bool isFromUser)

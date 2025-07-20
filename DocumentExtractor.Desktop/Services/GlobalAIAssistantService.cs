@@ -25,6 +25,7 @@ public partial class GlobalAIAssistantService : ObservableObject
 {
     private readonly IDocumentProcessor _documentProcessor;
     private readonly DocumentExtractionContext _context;
+    private readonly AIService _aiService;
 
     #region Observable Properties
 
@@ -78,6 +79,9 @@ public partial class GlobalAIAssistantService : ObservableObject
             var textExtractor = new TesseractTextExtractor(textExtractorLogger);
             var processorLogger = new SimpleConsoleLogger<RealDocumentProcessor>();
             _documentProcessor = new RealDocumentProcessor(textExtractor, _context, processorLogger);
+            
+            // Initialize AI Service for intelligent responses
+            _aiService = new AIService();
             
             // Initialize messages collection
             Messages = new ObservableCollection<ChatMessage>();
@@ -423,15 +427,19 @@ public partial class GlobalAIAssistantService : ObservableObject
     {
         try
         {
-            // First check for context-specific responses
-            var contextResponse = GetContextSpecificResponse(userMessage, context);
-            if (!string.IsNullOrEmpty(contextResponse))
+            // Use AI Service for intelligent responses
+            var response = await _aiService.ProcessChatMessageAsync(userMessage, context);
+            
+            // If AI response is not specific enough, check for context-specific responses
+            if (response.Length < 50 || response.Contains("I understand you're asking"))
             {
-                return contextResponse;
+                var contextResponse = GetContextSpecificResponse(userMessage, context);
+                if (!string.IsNullOrEmpty(contextResponse))
+                {
+                    return contextResponse;
+                }
             }
-
-            // Fall back to general AI analysis
-            var response = await AnalyzeUserIntentWithContext(userMessage, context);
+            
             return response;
         }
         catch (Exception ex)
