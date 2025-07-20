@@ -431,7 +431,7 @@ public partial class GlobalAIAssistantService : ObservableObject
             var response = await _aiService.ProcessChatMessageAsync(userMessage, context);
             
             // If AI response is not specific enough, check for context-specific responses
-            if (response.Length < 50 || response.Contains("I understand you're asking"))
+            if (response.Content.Length < 50 || response.Content.Contains("I understand you're asking"))
             {
                 var contextResponse = GetContextSpecificResponse(userMessage, context);
                 if (!string.IsNullOrEmpty(contextResponse))
@@ -440,7 +440,7 @@ public partial class GlobalAIAssistantService : ObservableObject
                 }
             }
             
-            return response;
+            return response.Content;
         }
         catch (Exception ex)
         {

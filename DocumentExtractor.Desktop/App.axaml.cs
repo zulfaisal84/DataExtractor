@@ -6,11 +6,15 @@ using System.Linq;
 using Avalonia.Markup.Xaml;
 using DocumentExtractor.Desktop.ViewModels;
 using DocumentExtractor.Desktop.Views;
+using DocumentExtractor.Desktop.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DocumentExtractor.Desktop;
 
 public partial class App : Application
 {
+    private ServiceProvider? _serviceProvider;
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -27,17 +31,30 @@ public partial class App : Application
             // Configure desktop lifetime to prevent auto-shutdown
             desktop.ShutdownMode = Avalonia.Controls.ShutdownMode.OnExplicitShutdown;
             
+            // Set up dependency injection
+            _serviceProvider = ServiceConfiguration.CreateServiceProvider();
+            
+            // Create main window with dependency injection
+            var mainWindowViewModel = _serviceProvider.GetRequiredService<MainWindowViewModel>();
             desktop.MainWindow = new MainWindow
             {
-                DataContext = new MainWindowViewModel(),
+                DataContext = mainWindowViewModel,
             };
             
             // Ensure window is shown and activated
             desktop.MainWindow.Show();
             desktop.MainWindow.Activate();
+            
+            // Handle application shutdown to dispose services
+            desktop.Exit += OnApplicationExit;
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private void OnApplicationExit(object? sender, ControlledApplicationLifetimeExitEventArgs e)
+    {
+        _serviceProvider?.Dispose();
     }
 
     private void DisableAvaloniaDataAnnotationValidation()

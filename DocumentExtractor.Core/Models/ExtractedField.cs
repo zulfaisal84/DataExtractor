@@ -67,6 +67,33 @@ namespace DocumentExtractor.Core.Models
         public string? BoundingBox { get; set; }
 
         /// <summary>
+        /// The position and size of this field in the document
+        /// Used by the hybrid AI architecture for visual feedback and highlighting
+        /// </summary>
+        public FieldPosition? Position { get; set; }
+
+        /// <summary>
+        /// Alias for Type property to maintain compatibility with hybrid services
+        /// The data type of this field - affects validation and formatting
+        /// </summary>
+        public FieldType FieldType 
+        { 
+            get => Type; 
+            set => Type = value; 
+        }
+
+        /// <summary>
+        /// Alias for Source property to maintain compatibility with hybrid services
+        /// How this field was extracted: local pattern, cloud AI, or user correction
+        /// </summary>
+        [MaxLength(50)]
+        public string ExtractionMethod 
+        { 
+            get => Source; 
+            set => Source = value; 
+        }
+
+        /// <summary>
         /// When this field was extracted.
         /// </summary>
         public DateTime ExtractedDate { get; set; } = DateTime.UtcNow;
@@ -118,6 +145,42 @@ namespace DocumentExtractor.Core.Models
             
             // Try to determine field type automatically based on value
             Type = DetermineFieldType(value);
+        }
+
+        /// <summary>
+        /// Constructor for creating a field with position information
+        /// Used by the hybrid AI architecture
+        /// </summary>
+        /// <param name="fieldName">Name of the field</param>
+        /// <param name="value">Extracted value</param>
+        /// <param name="confidence">Confidence score</param>
+        /// <param name="position">Field position in document</param>
+        /// <param name="source">Extraction source</param>
+        public ExtractedField(string fieldName, string value, double confidence, FieldPosition position, string source = "Unknown") 
+            : this(fieldName, value, confidence, source)
+        {
+            Position = position;
+            BoundingBox = position?.ToBoundingBox();
+        }
+
+        /// <summary>
+        /// Update the position and automatically sync with BoundingBox
+        /// </summary>
+        /// <param name="position">New position</param>
+        public void UpdatePosition(FieldPosition? position)
+        {
+            Position = position;
+            BoundingBox = position?.ToBoundingBox();
+        }
+
+        /// <summary>
+        /// Update from bounding box string and automatically create Position
+        /// </summary>
+        /// <param name="boundingBox">Bounding box string</param>
+        public void UpdateFromBoundingBox(string? boundingBox)
+        {
+            BoundingBox = boundingBox;
+            Position = FieldPosition.FromBoundingBox(boundingBox);
         }
 
         /// <summary>

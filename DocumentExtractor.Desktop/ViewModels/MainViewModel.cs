@@ -482,7 +482,7 @@ public partial class MainViewModel : ViewModelBase
             var context = HasDocuments ? "MainView - Documents Loaded" : "MainView - No Documents";
             
             var response = await aiService.ProcessChatMessageAsync(userMessage, context, documentPaths);
-            await AddChatMessage(response, false);
+            await AddChatMessage(response.Content, false);
         }
         catch (Exception ex)
         {
